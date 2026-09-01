@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
 const postSchema = z.object({
   name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
+  description: z.string().max(500).nullable().optional(),
   visibility: z.enum(["private", "link_only", "public"]).default("private"),
   forkable: z.boolean().default(false),
 });
