@@ -33,7 +33,7 @@ export function PasteLinkInput({ onAdded }: { onAdded: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-1">
+    <form data-tour="paste-input" onSubmit={submit} className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
         <div className="relative">
           <Link2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />

@@ -55,7 +55,7 @@ export function CategorySidebar({
     setCollectionDialogOpen(true);
   }
   return (
-    <aside className="sticky top-[116px] flex max-h-[calc(100vh-140px)] w-56 shrink-0 flex-col gap-6 self-start overflow-y-auto">
+    <aside data-tour="sidebar" className="sticky top-[116px] flex max-h-[calc(100vh-140px)] w-56 shrink-0 flex-col gap-6 self-start overflow-y-auto">
       <section>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
           Categories

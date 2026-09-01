@@ -32,6 +32,7 @@ import { ItemDetailDialog } from "./ItemDetailDialog";
 import { PasteLinkInput } from "./PasteLinkInput";
 import { SearchBar } from "./SearchBar";
 import { SettingsDialog } from "./SettingsDialog";
+import { OnboardingTour } from "./OnboardingTour";
 import { WebMCPTools } from "./WebMCPTools";
 import { WhatsAppImportDialog } from "./WhatsAppImportDialog";
 
@@ -284,7 +285,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-neutral-100 bg-white/95 backdrop-blur">
+      <header data-tour="header" className="sticky top-0 z-40 border-b border-neutral-100 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3">
           {/* Row 1: logo + controls */}
           <div className="flex items-center gap-4">
@@ -328,6 +329,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
                 <FileText className="h-4 w-4" />
               </a>
               <button
+                data-tour="chat-button"
                 onClick={() => setChatOpen(true)}
                 title="Chat with your library"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
@@ -544,6 +546,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
         />
       )}
 
+      <OnboardingTour onOpenChat={() => setChatOpen(true)} />
       <WebMCPTools apiKey={extensionKey} />
 
       {selectedItem && (
