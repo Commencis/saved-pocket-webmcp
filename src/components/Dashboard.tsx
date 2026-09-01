@@ -308,6 +308,14 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
                 </button>
               )}
               <button
+                data-tour="chat-button"
+                onClick={() => setChatOpen(true)}
+                title="Chat with your library"
+                className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </button>
+              <button
                 data-tour="whatsapp-import"
                 onClick={() => setImportOpen(true)}
                 title="Import from WhatsApp"
@@ -331,14 +339,6 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
               >
                 <FileText className="h-4 w-4" />
               </a>
-              <button
-                data-tour="chat-button"
-                onClick={() => setChatOpen(true)}
-                title="Chat with your library"
-                className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
-              >
-                <MessageSquare className="h-4 w-4" />
-              </button>
               <button
                 data-tour="settings-button"
                 onClick={() => setSettingsOpen(true)}
