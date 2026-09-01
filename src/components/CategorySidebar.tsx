@@ -163,7 +163,7 @@ export function CategorySidebar({
           </h2>
           <button
             onClick={handleCopyKey}
-            title="Chrome extension için API anahtarını kopyala"
+            title="Copy API key for Chrome extension"
             className="group flex w-full items-center gap-1.5 rounded-lg border border-dashed border-neutral-300 px-2 py-1.5 hover:bg-neutral-50"
           >
             <span className="flex-1 truncate font-mono text-[10px] text-neutral-500">

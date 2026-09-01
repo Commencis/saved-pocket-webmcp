@@ -308,7 +308,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
               )}
               <button
                 onClick={() => setImportOpen(true)}
-                title="WhatsApp'tan İçe Aktar"
+                title="Import from WhatsApp"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
               >
                 <Upload className="h-4 w-4" />
