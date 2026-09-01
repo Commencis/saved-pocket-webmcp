@@ -18,7 +18,7 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
           popover: {
             title: "Welcome to SavedPocket",
             description:
-              "Your personal AI-powered reading list. Here's a quick tour of what you can do.",
+              "Your personal AI-powered reading list. Here's a quick tour of everything you can do.",
             side: "bottom",
             align: "start",
           },
@@ -26,9 +26,9 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
         {
           element: '[data-tour="paste-input"]',
           popover: {
-            title: "Save anything",
+            title: "Save any link",
             description:
-              "Paste any URL here to save it. AI automatically categorizes, tags, and summarizes it for you.",
+              "Paste any URL here to save it instantly. AI will categorize, tag, and summarize it automatically.",
             side: "bottom",
             align: "end",
           },
@@ -38,7 +38,7 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
           popover: {
             title: "Search your library",
             description:
-              "Find anything you've saved — by title, topic, or meaning. Semantic search included.",
+              "Find anything you've saved — by title, topic, or meaning. Semantic search understands context, not just keywords.",
             side: "bottom",
             align: "start",
           },
@@ -48,9 +48,49 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
           popover: {
             title: "Filter and organize",
             description:
-              "Browse by category, platform, or your own collections to stay organized.",
+              "Browse by category, source platform, or your own collections. Everything sorted automatically.",
             side: "right",
             align: "start",
+          },
+        },
+        {
+          element: '[data-tour="whatsapp-import"]',
+          popover: {
+            title: "Import from WhatsApp",
+            description:
+              "Export a WhatsApp chat and upload the .txt file — all links inside are detected and saved automatically.",
+            side: "bottom",
+            align: "end",
+          },
+        },
+        {
+          element: '[data-tour="marketplace"]',
+          popover: {
+            title: "Collection Marketplace",
+            description:
+              "Discover and subscribe to curated collections shared by the community.",
+            side: "bottom",
+            align: "end",
+          },
+        },
+        {
+          element: '[data-tour="docs"]',
+          popover: {
+            title: "Documentation",
+            description:
+              "Learn how to get the most out of SavedPocket — keyboard shortcuts, API, Chrome extension, and more.",
+            side: "bottom",
+            align: "end",
+          },
+        },
+        {
+          element: '[data-tour="settings-button"]',
+          popover: {
+            title: "Settings",
+            description:
+              "Add your Anthropic API key to unlock AI analysis. Your key is stored only in your local database.",
+            side: "bottom",
+            align: "end",
           },
         },
         {
@@ -58,7 +98,7 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
           popover: {
             title: "Chat with your library",
             description:
-              'Ask questions like "What did I save about React?" and get AI-powered answers from your saved content.',
+              'Ask anything — "What did I save about React?" or "Summarize my reading list this week." AI searches your saved content to answer.',
             nextBtnText: "Open Chat →",
             side: "bottom",
             align: "end",
@@ -98,9 +138,9 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
     <button
       onClick={startTour}
       title="Take the tour"
-      className="fixed right-4 top-1/2 z-40 -translate-y-1/2 flex items-center justify-center rounded-full border border-neutral-200 bg-white p-2.5 text-neutral-400 shadow-sm transition-colors hover:bg-neutral-50 hover:text-neutral-700"
+      className="fixed bottom-6 right-6 z-40 flex items-center justify-center rounded-full bg-violet-600 p-3 text-white shadow-lg shadow-violet-300 transition-all hover:scale-110 hover:bg-violet-700 hover:shadow-violet-400"
     >
-      <HelpCircle className="h-4 w-4" />
+      <HelpCircle className="h-5 w-5" />
     </button>
   );
 }

@@ -308,6 +308,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
                 </button>
               )}
               <button
+                data-tour="whatsapp-import"
                 onClick={() => setImportOpen(true)}
                 title="Import from WhatsApp"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
@@ -315,6 +316,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
                 <Upload className="h-4 w-4" />
               </button>
               <a
+                data-tour="marketplace"
                 href="/marketplace"
                 title="Collection Marketplace"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
@@ -322,6 +324,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
                 <BookOpen className="h-4 w-4" />
               </a>
               <a
+                data-tour="docs"
                 href="/docs"
                 title="Documentation"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
@@ -337,6 +340,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
                 <MessageSquare className="h-4 w-4" />
               </button>
               <button
+                data-tour="settings-button"
                 onClick={() => setSettingsOpen(true)}
                 title="Settings"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"

@@ -74,7 +74,7 @@ export function ChatDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-end bg-black/20 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-end bg-black/20 pb-20 pl-4 pr-4 pt-4"
       onClick={onClose}
     >
       <div
