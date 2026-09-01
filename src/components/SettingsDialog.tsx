@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Trash2, X } from "lucide-react";
+import { Copy, Loader2, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { JobCounts } from "@/lib/types";
 
@@ -27,6 +27,8 @@ export function SettingsDialog({
   onSaved: () => void;
 }) {
   const [settings, setSettings] = useState<AiSettings | null>(null);
+  const [extensionKey, setExtensionKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,6 +44,9 @@ export function SettingsDialog({
           setModel(data.model ?? "");
         }
       });
+    void fetch("/api/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data?.apiKey) setExtensionKey(data.apiKey); });
   }, []);
 
   async function save(payload: { apiKey?: string | null; model?: string | null }) {
@@ -200,6 +205,24 @@ export function SettingsDialog({
                 </button>
               )}
             </div>
+
+            {extensionKey && (
+              <div className="flex flex-col gap-1 border-t border-neutral-100 pt-4">
+                <span className="text-xs font-medium text-neutral-500">Extension API key</span>
+                <p className="text-xs text-neutral-400">Paste this into the SavedPocket extension to connect remotely.</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 truncate rounded-lg bg-neutral-50 px-3 py-2 font-mono text-xs text-neutral-700">
+                    {extensionKey}
+                  </code>
+                  <button
+                    onClick={() => { void navigator.clipboard.writeText(extensionKey); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                    className="shrink-0 rounded-lg border border-neutral-200 p-2 text-neutral-500 hover:bg-neutral-100"
+                  >
+                    {copied ? <span className="text-xs text-emerald-600">Copied!</span> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
 
           </div>
         )}
