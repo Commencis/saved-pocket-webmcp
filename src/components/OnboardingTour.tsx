@@ -138,7 +138,7 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
     <button
       onClick={startTour}
       title="Take the tour"
-      className="fixed bottom-6 right-6 z-40 flex items-center justify-center rounded-full bg-violet-600 p-3 text-white shadow-lg shadow-violet-300 transition-all hover:scale-110 hover:bg-violet-700 hover:shadow-violet-400"
+      className="fixed bottom-6 right-3 z-40 flex items-center justify-center rounded-full bg-violet-600 p-3 text-white shadow-lg shadow-violet-300 transition-all hover:scale-110 hover:bg-violet-700 hover:shadow-violet-400"
     >
       <HelpCircle className="h-5 w-5" />
     </button>

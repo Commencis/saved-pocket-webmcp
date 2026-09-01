@@ -25,6 +25,7 @@ export function ChatDialog({
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmClose, setConfirmClose] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,6 +66,11 @@ export function ChatDialog({
     }
   }
 
+  function requestClose() {
+    if (messages.length > 0) setConfirmClose(true);
+    else onClose();
+  }
+
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -74,13 +80,33 @@ export function ChatDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-end bg-black/20 pb-20 pl-4 pr-4 pt-4"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end justify-end bg-black/20 pb-20 pl-4 pr-20 pt-4"
+      onClick={requestClose}
     >
       <div
-        className="flex h-[600px] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl"
+        className="relative flex h-[600px] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {confirmClose && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/95 px-6 text-center backdrop-blur-sm">
+            <p className="text-sm font-medium text-neutral-800">End this conversation?</p>
+            <p className="text-xs text-neutral-500">Your chat history will be lost.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmClose(false)}
+                className="rounded-lg border border-neutral-200 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+              >
+                Keep chatting
+              </button>
+              <button
+                onClick={onClose}
+                className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+              >
+                End conversation
+              </button>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-3">
           <MessageSquare className="h-4 w-4 text-neutral-500" />
@@ -95,7 +121,7 @@ export function ChatDialog({
             )}
           </div>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="ml-auto rounded-lg p-1 text-neutral-400 hover:bg-neutral-100"
           >
             <X className="h-4 w-4" />
