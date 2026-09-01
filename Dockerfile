@@ -3,6 +3,17 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+FROM node:22-slim AS model-cache
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+RUN node --input-type=module --eval "\
+  import { pipeline, env } from '@huggingface/transformers';\
+  env.cacheDir = '/model_cache';\
+  console.log('Downloading embedding model...');\
+  await pipeline('feature-extraction', 'Xenova/multilingual-e5-small', { dtype: 'q8' });\
+  console.log('Embedding model ready.');\
+  process.exit(0);"
+
 FROM node:22-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -25,6 +36,8 @@ COPY --from=builder /app/drizzle ./drizzle
 # onnxruntime-node native bindings (needed for local embedding model)
 COPY --from=builder /app/node_modules/onnxruntime-node ./node_modules/onnxruntime-node
 COPY --from=builder /app/node_modules/onnxruntime-common ./node_modules/onnxruntime-common
+# Pre-downloaded embedding model (baked into image at build time)
+COPY --from=model-cache /model_cache ./data/models
 RUN mkdir -p data/images data/models && chown -R node:node /app
 USER node
 EXPOSE 3000
