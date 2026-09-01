@@ -80,11 +80,11 @@ export function ChatDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-end bg-black/20 pb-20 pl-4 pr-20 pt-4"
+      className="fixed inset-0 z-50 flex items-end justify-end bg-black/20 pb-8 pl-4 pr-20 pt-4"
       onClick={requestClose}
     >
       <div
-        className="relative flex h-[600px] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl"
+        className="relative flex h-[420px] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {confirmClose && (

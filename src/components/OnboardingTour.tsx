@@ -54,6 +54,16 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
           },
         },
         {
+          element: '[data-tour="chat-button"]',
+          popover: {
+            title: "Chat with your library",
+            description:
+              'The heart of SavedPocket. Ask anything — "What did I save about React?" or "Summarize my reading list." AI searches your entire library to answer.',
+            side: "bottom",
+            align: "end",
+          },
+        },
+        {
           element: '[data-tour="whatsapp-import"]',
           popover: {
             title: "Import from WhatsApp",
@@ -89,16 +99,6 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
             title: "Settings",
             description:
               "Add your Anthropic API key to unlock AI analysis. Your key is stored only in your local database.",
-            side: "bottom",
-            align: "end",
-          },
-        },
-        {
-          element: '[data-tour="chat-button"]',
-          popover: {
-            title: "Chat with your library",
-            description:
-              'Ask anything — "What did I save about React?" or "Summarize my reading list this week." AI searches your saved content to answer.',
             nextBtnText: "Open Chat →",
             side: "bottom",
             align: "end",
