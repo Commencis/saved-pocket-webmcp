@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { collections } from "@/db/schema";
+import { collectionItems, collections } from "@/db/schema";
 import { getSessionUser } from "@/lib/session";
 
 const patchSchema = z.object({
@@ -24,6 +24,23 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  }
+
+  const needsItemCheck =
+    (parsed.data.visibility && parsed.data.visibility !== "private") ||
+    parsed.data.forkable === true;
+
+  if (needsItemCheck) {
+    const [{ value: itemCount }] = await db
+      .select({ value: count() })
+      .from(collectionItems)
+      .where(eq(collectionItems.collectionId, Number(id)));
+    if (itemCount === 0) {
+      return NextResponse.json(
+        { error: "Add items to this collection before making it public or enabling forking." },
+        { status: 400 },
+      );
+    }
   }
 
   const [row] = await db

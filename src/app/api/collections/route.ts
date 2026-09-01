@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
-  const { name, description, visibility, forkable } = parsed.data;
+  const { name, description } = parsed.data;
+
+  // New collections always start private with no forking — items must exist first.
+  const visibility = "private";
+  const forkable = false;
 
   // Generate a unique slug (retry up to 3 times on conflict)
   let slug = generateSlug(name);

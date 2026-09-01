@@ -41,6 +41,13 @@ export async function GET(
     .where(eq(collectionItems.collectionId, collectionId))
     .orderBy(desc(collectionItems.addedAt));
 
+  if (rows.length === 0) {
+    return NextResponse.json(
+      { error: "Nothing to export — this collection has no items." },
+      { status: 400 },
+    );
+  }
+
   const safeName = col.name.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 60);
   const dateTag = new Date().toISOString().slice(0, 10);
 

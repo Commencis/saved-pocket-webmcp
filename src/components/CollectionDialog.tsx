@@ -14,6 +14,7 @@ interface Props {
 
 export function CollectionDialog({ collection, onClose, onSaved, onDeleted }: Props) {
   const isEdit = !!collection;
+  const hasItems = (collection?.itemCount ?? 0) > 0;
   const [name, setName] = useState(collection?.name ?? "");
   const [description, setDescription] = useState(collection?.description ?? "");
   const [visibility, setVisibility] = useState<"private" | "link_only" | "public">(
@@ -37,7 +38,12 @@ export function CollectionDialog({ collection, onClose, onSaved, onDeleted }: Pr
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || null, visibility, forkable }),
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || null,
+          visibility: hasItems ? visibility : "private",
+          forkable: hasItems ? forkable : false,
+        }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -118,22 +124,32 @@ export function CollectionDialog({ collection, onClose, onSaved, onDeleted }: Pr
                   { value: "link_only", label: "Anyone with the link", desc: "Share via URL, not listed publicly" },
                   { value: "public", label: "Public", desc: "Listed in the marketplace" },
                 ] as const
-              ).map(({ value, label, desc }) => (
-                <label key={value} className="flex cursor-pointer items-start gap-2.5">
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value={value}
-                    checked={visibility === value}
-                    onChange={() => setVisibility(value)}
-                    className="mt-0.5"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-neutral-700">{label}</p>
-                    <p className="text-xs text-neutral-400">{desc}</p>
-                  </div>
-                </label>
-              ))}
+              ).map(({ value, label, desc }) => {
+                const disabled = !hasItems && value !== "private";
+                return (
+                  <label
+                    key={value}
+                    className={`flex items-start gap-2.5 ${disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+                  >
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value={value}
+                      checked={visibility === value}
+                      onChange={() => !disabled && setVisibility(value)}
+                      disabled={disabled}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-neutral-700">{label}</p>
+                      <p className="text-xs text-neutral-400">{desc}</p>
+                    </div>
+                  </label>
+                );
+              })}
+              {!hasItems && (
+                <p className="text-xs text-neutral-400">Add items to this collection to enable sharing.</p>
+              )}
             </div>
           </div>
 
@@ -166,7 +182,7 @@ export function CollectionDialog({ collection, onClose, onSaved, onDeleted }: Pr
             </div>
           )}
 
-          {isEdit && (
+          {isEdit && hasItems && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-neutral-400">Export for LLM / NotebookLM:</span>
               <a
