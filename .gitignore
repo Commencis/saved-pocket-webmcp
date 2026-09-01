@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+.DS_Store
+*.pem
+npm-debug.log*
+.env
+.env*.local
+data/images/
+data/models/
+*.tsbuildinfo
+next-env.d.ts
+extension.zip

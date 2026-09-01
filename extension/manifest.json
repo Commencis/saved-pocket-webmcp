@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "SavedPocket Collector",
+  "version": "1.1.0",
+  "description": "Collects your saved posts from Instagram, LinkedIn, X and YouTube into SavedPocket. Save any page with one click.",
+  "permissions": ["storage", "contextMenus", "activeTab"],
+  "host_permissions": ["http://localhost:3000/*", "https://*/*", "http://*/*"],
+  "background": { "service_worker": "background.js" },
+  "icons": { "128": "icons/icon.svg" },
+  "action": {
+    "default_title": "SavedPocket Settings",
+    "default_icon": "icons/action.svg",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "exclude_matches": ["http://localhost:3000/*"],
+      "js": ["content/save-anywhere.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["shared.js", "content/instagram.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.linkedin.com/my-items/*"],
+      "js": ["shared.js", "content/linkedin.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://x.com/i/bookmarks*",
+        "https://twitter.com/i/bookmarks*"
+      ],
+      "js": ["shared.js", "content/x.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.youtube.com/playlist*"],
+      "js": ["shared.js", "content/youtube.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

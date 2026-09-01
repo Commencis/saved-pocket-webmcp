@@ -1,0 +1,57 @@
+# Production override — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Copy .env.example to .env.prod, fill in all values, then:
+#   docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  app:
+    restart: unless-stopped
+    environment:
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-4-5-20251001}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-savedpocket}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-savedpocket}
+      IMAGE_CACHE_DIR: /app/data/images
+      MODEL_CACHE_DIR: /app/data/models
+    volumes:
+      - app_data:/app/data
+    ports: []  # Remove direct port exposure; Nginx proxies instead
+
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-savedpocket}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-savedpocket}
+    volumes:
+      - savedpocket_pgdata:/var/lib/postgresql/data
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - app
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # Run once to obtain cert:
+    #   docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d yourdomain.com --email you@email.com --agree-tos
+    # Renew (add to crontab):
+    #   0 12 * * * docker compose run --rm certbot renew --quiet && docker compose exec nginx nginx -s reload
+
+volumes:
+  app_data:
+  certbot_certs:
+  certbot_www:

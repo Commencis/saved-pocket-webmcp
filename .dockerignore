@@ -1,0 +1,14 @@
+node_modules
+.next
+data
+.env
+.env.*
+!.env.example
+extension
+.git
+.playwright-mcp
+*.log
+tsconfig.tsbuildinfo
+Dockerfile
+docker-compose.yml
+README.md

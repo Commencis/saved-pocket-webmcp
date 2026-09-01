@@ -1,0 +1,46 @@
+services:
+  postgres:
+    # postgres:16 + pgvector extension (data-compatible with plain postgres:16)
+    image: pgvector/pgvector:pg16
+    container_name: savedpocket-db
+    environment:
+      POSTGRES_USER: savedpocket
+      POSTGRES_PASSWORD: savedpocket
+      POSTGRES_DB: savedpocket
+    ports:
+      - "5432:5432"
+    volumes:
+      - savedpocket_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U savedpocket"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Full dockerized app. For local development you can instead run only the
+  # database (`docker compose up -d postgres`) and use `npm run dev`.
+  app:
+    build: .
+    container_name: savedpocket-app
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://savedpocket:savedpocket@postgres:5432/savedpocket
+      # Optional server-wide fallback; users can set their own key in-app (Settings)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-4-5}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      IMAGE_CACHE_DIR: /app/data/images
+      MODEL_CACHE_DIR: /app/data/models
+    volumes:
+      # Shared with local dev (npm run dev) so cached images work in both modes
+      - ./data/images:/app/data/images
+      # Embedding model downloaded once (~120MB), reused across rebuilds
+      - ./data/models:/app/data/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  savedpocket_pgdata:
