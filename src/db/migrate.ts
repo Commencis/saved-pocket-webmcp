@@ -1,6 +1,7 @@
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { db, sql } from "./client";
 import { categories, connections, user } from "./schema";
+import { seedDemoUser } from "./seed-demo";
 
 const SEED_CATEGORIES = [
   "Tech",
@@ -27,6 +28,7 @@ export async function runMigrations() {
         .values(SEED_CATEGORIES.map((name) => ({ name, isSeeded: true })))
         .onConflictDoNothing();
       await encryptLegacyPlaintext();
+      await seedDemoUser();
       return;
     } catch (error) {
       lastError = error;

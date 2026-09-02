@@ -184,7 +184,13 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
     void fetch("/api/settings/ai")
       .then((res) => (res.ok ? res.json() : null))
       .then((ai) => {
-        if (ai) setAiConfigured(ai.hasUserKey || ai.hasServerKey);
+        if (ai)
+          setAiConfigured(
+            ai.openai?.hasUserKey ||
+              ai.openai?.hasServerKey ||
+              ai.anthropic?.hasUserKey ||
+              ai.anthropic?.hasServerKey,
+          );
       })
       .catch(() => {});
   }, [loadCategories, loadCollections, loadStatus]);
