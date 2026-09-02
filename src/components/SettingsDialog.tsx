@@ -4,17 +4,32 @@ import { Copy, Loader2, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { JobCounts } from "@/lib/types";
 
-const MODEL_OPTIONS = [
+const OPENAI_MODELS = [
   { value: "", label: "Default (gpt-4o-mini) — fast & cheap" },
   { value: "gpt-4o", label: "gpt-4o — smarter, vision-capable" },
   { value: "gpt-4.1", label: "gpt-4.1 — latest & most capable" },
 ];
 
-interface AiSettings {
+const ANTHROPIC_MODELS = [
+  { value: "", label: "Default (claude-haiku-4-5) — fast & cheap" },
+  { value: "claude-sonnet-4-5-20251001", label: "claude-sonnet-4-5 — smarter" },
+  { value: "claude-opus-4-5", label: "claude-opus-4-5 — most capable" },
+];
+
+type AiProvider = "openai" | "anthropic";
+
+interface ProviderSettings {
   hasUserKey: boolean;
   hasServerKey: boolean;
   maskedKey: string | null;
   model: string | null;
+  effectiveModel: string;
+}
+
+interface AiSettings {
+  provider: AiProvider;
+  openai: ProviderSettings;
+  anthropic: ProviderSettings;
 }
 
 export function SettingsDialog({
@@ -29,8 +44,16 @@ export function SettingsDialog({
   const [settings, setSettings] = useState<AiSettings | null>(null);
   const [extensionKey, setExtensionKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("");
+
+  // Active provider tab in the UI
+  const [activeProvider, setActiveProvider] = useState<AiProvider>("openai");
+
+  // Per-provider form state
+  const [openaiKey, setOpenaiKey] = useState("");
+  const [openaiModel, setOpenaiModel] = useState("");
+  const [anthropicKey, setAnthropicKey] = useState("");
+  const [anthropicModel, setAnthropicModel] = useState("");
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -38,10 +61,12 @@ export function SettingsDialog({
   useEffect(() => {
     void fetch("/api/settings/ai")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+      .then((data: AiSettings | null) => {
         if (data) {
           setSettings(data);
-          setModel(data.model ?? "");
+          setActiveProvider(data.provider);
+          setOpenaiModel(data.openai.model ?? "");
+          setAnthropicModel(data.anthropic.model ?? "");
         }
       });
     void fetch("/api/me")
@@ -49,7 +74,7 @@ export function SettingsDialog({
       .then((data) => { if (data?.apiKey) setExtensionKey(data.apiKey); });
   }, []);
 
-  async function save(payload: { apiKey?: string | null; model?: string | null }) {
+  async function save(provider: AiProvider, payload: { apiKey?: string | null; model?: string | null }) {
     setBusy(true);
     setError(null);
     setSuccess(null);
@@ -57,21 +82,20 @@ export function SettingsDialog({
       const res = await fetch("/api/settings/ai", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ provider, ...payload }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Save failed");
-        return;
-      }
+      if (!res.ok) { setError(data.error ?? "Save failed"); return; }
       setSuccess(
         data.requeued > 0
           ? `Saved. Re-analyzing ${data.requeued} previously failed item(s)…`
           : "Saved.",
       );
-      setApiKey("");
-      const refreshed = await fetch("/api/settings/ai").then((r) => r.json());
+      if (provider === "openai") setOpenaiKey("");
+      else setAnthropicKey("");
+      const refreshed: AiSettings = await fetch("/api/settings/ai").then((r) => r.json());
       setSettings(refreshed);
+      setActiveProvider(provider);
       onSaved();
     } finally {
       setBusy(false);
@@ -79,12 +103,26 @@ export function SettingsDialog({
   }
 
   function handleSave() {
+    const key = activeProvider === "openai" ? openaiKey : anthropicKey;
+    const model = activeProvider === "openai" ? openaiModel : anthropicModel;
+    const currentSettings = settings?.[activeProvider];
     const payload: { apiKey?: string | null; model?: string | null } = {
       model: model === "" ? null : model,
     };
-    if (apiKey.trim()) payload.apiKey = apiKey.trim();
-    void save(payload);
+    if (key.trim()) payload.apiKey = key.trim();
+    void save(activeProvider, payload);
+    void currentSettings; // suppress lint
   }
+
+  const currentSettings = settings?.[activeProvider];
+  const models = activeProvider === "openai" ? OPENAI_MODELS : ANTHROPIC_MODELS;
+  const keyPlaceholder = activeProvider === "openai" ? "sk-…" : "sk-ant-…";
+  const keyValue = activeProvider === "openai" ? openaiKey : anthropicKey;
+  const modelValue = activeProvider === "openai" ? openaiModel : anthropicModel;
+  const setKeyValue = activeProvider === "openai" ? setOpenaiKey : setAnthropicKey;
+  const setModelValue = activeProvider === "openai" ? setOpenaiModel : setAnthropicModel;
+
+  const isActiveProvider = settings?.provider === activeProvider;
 
   return (
     <div
@@ -97,10 +135,7 @@ export function SettingsDialog({
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Settings</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100"
-          >
+          <button onClick={onClose} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -111,93 +146,100 @@ export function SettingsDialog({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-neutral-700">
-              AI integration
-            </h3>
-            <p className="text-xs text-neutral-500">
-              SavedPocket uses the OpenAI API to categorize, tag and
-              summarize your saved items. Your key is stored only in your local
-              database and never leaves this app. Get one at{" "}
-              <a
-                href="https://platform.openai.com/api-keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                platform.openai.com
-              </a>
-              .
-            </p>
-
-            {!settings.hasUserKey && !settings.hasServerKey && (
-              <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
-                No API key configured — new items will be saved but not
-                analyzed until you add one.
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-700">AI integration</h3>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                Active provider:{" "}
+                <span className="font-medium text-neutral-700">
+                  {settings.provider === "openai" ? "OpenAI" : "Anthropic"}
+                </span>
               </p>
-            )}
+            </div>
 
+            {/* Provider tabs */}
+            <div className="flex gap-1 rounded-lg bg-neutral-100 p-1">
+              {(["openai", "anthropic"] as AiProvider[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { setActiveProvider(p); setError(null); setSuccess(null); }}
+                  className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-colors ${
+                    activeProvider === p
+                      ? "bg-white text-neutral-900 shadow-sm"
+                      : "text-neutral-500 hover:text-neutral-700"
+                  }`}
+                >
+                  {p === "openai" ? "OpenAI" : "Anthropic"}
+                  {settings.provider === p && (
+                    <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Key field */}
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-xs font-medium text-neutral-500">
-                OpenAI API key
-                {settings.hasUserKey && settings.maskedKey && (
-                  <span className="ml-2 font-mono text-neutral-400">
-                    current: {settings.maskedKey}
-                  </span>
+                {activeProvider === "openai" ? "OpenAI" : "Anthropic"} API key
+                {currentSettings?.hasUserKey && currentSettings?.maskedKey && (
+                  <span className="ml-2 font-mono text-neutral-400">current: {currentSettings.maskedKey}</span>
                 )}
-                {!settings.hasUserKey && settings.hasServerKey && (
-                  <span className="ml-2 text-neutral-400">
-                    (using the server-wide key)
-                  </span>
+                {!currentSettings?.hasUserKey && currentSettings?.hasServerKey && (
+                  <span className="ml-2 text-neutral-400">(using the server-wide key)</span>
                 )}
               </span>
               <input
                 type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-…"
+                value={keyValue}
+                onChange={(e) => setKeyValue(e.target.value)}
+                placeholder={keyPlaceholder}
                 autoComplete="off"
                 className="rounded-lg border border-neutral-200 px-3 py-2 font-mono text-sm outline-none focus:border-neutral-400"
               />
+              <a
+                href={activeProvider === "openai" ? "https://platform.openai.com/api-keys" : "https://console.anthropic.com/settings/keys"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-neutral-400 underline"
+              >
+                Get a key →
+              </a>
             </label>
 
+            {/* Model field */}
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-xs font-medium text-neutral-500">Model</span>
               <select
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
+                value={modelValue}
+                onChange={(e) => setModelValue(e.target.value)}
                 className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm"
               >
-                {MODEL_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
+                {models.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </label>
 
-            {error && (
-              <p className="rounded-lg bg-red-50 p-2 text-xs text-red-600">
-                {error}
+            {!currentSettings?.hasUserKey && !currentSettings?.hasServerKey && (
+              <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
+                No {activeProvider === "openai" ? "OpenAI" : "Anthropic"} key configured for this provider.
               </p>
             )}
-            {success && (
-              <p className="rounded-lg bg-emerald-50 p-2 text-xs text-emerald-700">
-                {success}
-              </p>
-            )}
+
+            {error && <p className="rounded-lg bg-red-50 p-2 text-xs text-red-600">{error}</p>}
+            {success && <p className="rounded-lg bg-emerald-50 p-2 text-xs text-emerald-700">{success}</p>}
 
             <div className="flex items-center gap-2 border-t border-neutral-100 pt-4">
               <button
                 onClick={handleSave}
-                disabled={busy || (!apiKey.trim() && !settings.hasUserKey && model === (settings.model ?? ""))}
+                disabled={busy || (!keyValue.trim() && !currentSettings?.hasUserKey && modelValue === (currentSettings?.model ?? ""))}
                 className="flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
               >
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-                Save
+                {isActiveProvider ? "Save" : `Save & switch to ${activeProvider === "openai" ? "OpenAI" : "Anthropic"}`}
               </button>
-              {settings.hasUserKey && (
+              {currentSettings?.hasUserKey && (
                 <button
-                  onClick={() => void save({ apiKey: null })}
+                  onClick={() => void save(activeProvider, { apiKey: null })}
                   disabled={busy}
                   className="ml-auto flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
                 >
@@ -223,7 +265,6 @@ export function SettingsDialog({
                 </div>
               </div>
             )}
-
           </div>
         )}
       </div>

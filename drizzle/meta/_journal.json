@@ -71,6 +71,13 @@
       "when": 1754070000000,
       "tag": "0009_collection_forked_from",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1754080000000,
+      "tag": "0010_dual_ai_provider",
+      "breakpoints": true
     }
   ]
 }

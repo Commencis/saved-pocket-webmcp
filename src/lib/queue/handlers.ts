@@ -2,30 +2,53 @@ import { readFile } from "fs/promises";
 import { eq, sql as dsql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { categories, items, user } from "@/db/schema";
-import { analyzeItem, analyzeItemWithImage, getServerAiKey, type ImageSource } from "@/lib/claude";
+import {
+  analyzeItem,
+  analyzeItemWithImage,
+  getServerAiKey,
+  getServerProvider,
+  type AiCredentials,
+  type ImageSource,
+} from "@/lib/claude";
 import { decrypt } from "@/lib/crypto";
 import { buildItemEmbeddingText, embedText } from "@/lib/embeddings";
 import { cachedImageAbsolutePath, cacheImage } from "@/lib/image-cache";
 import { enqueueJob } from "./enqueue";
 
+function resolveCredentials(owner: {
+  aiProvider?: string | null;
+  openaiApiKey?: string | null;
+  openaiModel?: string | null;
+  anthropicApiKey?: string | null;
+  anthropicModel?: string | null;
+} | undefined): AiCredentials {
+  const provider = ((owner?.aiProvider ?? getServerProvider()) === "anthropic" ? "anthropic" : "openai") as AiCredentials["provider"];
+
+  const rawKey =
+    provider === "openai"
+      ? owner?.openaiApiKey?.trim()
+      : owner?.anthropicApiKey?.trim();
+
+  const apiKey = rawKey ? decrypt(rawKey) : getServerAiKey(provider);
+  if (!apiKey) {
+    throw Object.assign(
+      new Error(`No ${provider === "anthropic" ? "Anthropic" : "OpenAI"} API key configured. Add yours in Settings (gear icon), then re-analyze.`),
+      { status: 401 },
+    );
+  }
+
+  const model =
+    provider === "openai" ? owner?.openaiModel : owner?.anthropicModel;
+
+  return { provider, apiKey, model };
+}
+
 export async function handleAnalyzeItem(itemId: string): Promise<void> {
   const item = await db.query.items.findFirst({ where: eq(items.id, itemId) });
   if (!item || item.analysisStatus === "done") return;
 
-  const owner = await db.query.user.findFirst({
-    where: eq(user.id, item.userId),
-  });
-  const rawKey = owner?.anthropicApiKey?.trim();
-  const apiKey = rawKey ? decrypt(rawKey) : getServerAiKey();
-  if (!apiKey) {
-    // 401 marks the failure as permanent (no pointless retries)
-    throw Object.assign(
-      new Error(
-        "No OpenAI API key configured. Add yours in Settings (gear icon), then re-analyze.",
-      ),
-      { status: 401 },
-    );
-  }
+  const owner = await db.query.user.findFirst({ where: eq(user.id, item.userId) });
+  const creds = resolveCredentials(owner);
 
   await db
     .update(items)
@@ -34,28 +57,18 @@ export async function handleAnalyzeItem(itemId: string): Promise<void> {
 
   const allCategories = await db.select().from(categories);
   const result = await analyzeItem(
-    {
-      url: item.url,
-      platform: item.platform,
-      title: item.title,
-      description: item.description,
-    },
+    { url: item.url, platform: item.platform, title: item.title, description: item.description },
     allCategories.map((c) => c.name),
-    { apiKey, model: owner?.anthropicModel },
+    creds,
   );
 
-  let category = allCategories.find(
-    (c) => c.name.toLowerCase() === result.category.toLowerCase(),
-  );
+  let category = allCategories.find((c) => c.name.toLowerCase() === result.category.toLowerCase());
   if (!category) {
     if (result.isNewCategory && allCategories.length < 40) {
       const [inserted] = await db
         .insert(categories)
         .values({ name: result.category, isSeeded: false })
-        .onConflictDoUpdate({
-          target: categories.name,
-          set: { name: dsql`excluded.name` },
-        })
+        .onConflictDoUpdate({ target: categories.name, set: { name: dsql`excluded.name` } })
         .returning();
       category = inserted;
     } else {
@@ -77,28 +90,17 @@ export async function handleAnalyzeItem(itemId: string): Promise<void> {
     })
     .where(eq(items.id, itemId));
 
-  // Re-embed with the fresh tags + summary for semantic search
   await enqueueJob("embed_item", { itemId });
 }
 
 export async function handleAnalyzeItemWithImage(itemId: string): Promise<void> {
   const item = await db.query.items.findFirst({ where: eq(items.id, itemId) });
   if (!item?.localImagePath) {
-    throw Object.assign(
-      new Error("No cached image available for visual analysis"),
-      { status: 400 },
-    );
+    throw Object.assign(new Error("No cached image available for visual analysis"), { status: 400 });
   }
 
   const owner = await db.query.user.findFirst({ where: eq(user.id, item.userId) });
-  const rawKey = owner?.anthropicApiKey?.trim();
-  const apiKey = rawKey ? decrypt(rawKey) : getServerAiKey();
-  if (!apiKey) {
-    throw Object.assign(
-      new Error("No OpenAI API key configured. Add yours in Settings (gear icon), then re-analyze."),
-      { status: 401 },
-    );
-  }
+  const creds = resolveCredentials(owner);
 
   const ext = item.localImagePath.split(".").pop() ?? "jpg";
   const mediaTypeMap: Record<string, ImageSource["mediaType"]> = {
@@ -122,29 +124,19 @@ export async function handleAnalyzeItemWithImage(itemId: string): Promise<void> 
 
   const allCategories = await db.select().from(categories);
   const result = await analyzeItemWithImage(
-    {
-      url: item.url,
-      platform: item.platform,
-      title: item.title,
-      description: item.description,
-    },
+    { url: item.url, platform: item.platform, title: item.title, description: item.description },
     { data: imageData, mediaType },
     allCategories.map((c) => c.name),
-    { apiKey, model: owner?.anthropicModel },
+    creds,
   );
 
-  let category = allCategories.find(
-    (c) => c.name.toLowerCase() === result.category.toLowerCase(),
-  );
+  let category = allCategories.find((c) => c.name.toLowerCase() === result.category.toLowerCase());
   if (!category) {
     if (result.isNewCategory && allCategories.length < 40) {
       const [inserted] = await db
         .insert(categories)
         .values({ name: result.category, isSeeded: false })
-        .onConflictDoUpdate({
-          target: categories.name,
-          set: { name: dsql`excluded.name` },
-        })
+        .onConflictDoUpdate({ target: categories.name, set: { name: dsql`excluded.name` } })
         .returning();
       category = inserted;
     } else {
@@ -200,8 +192,6 @@ export async function handleCheckLink(itemId: string): Promise<void> {
       });
       void res.body?.cancel();
     }
-    // Only unambiguous "gone" codes count as dead — social platforms answer
-    // 403/429/999 to non-browser requests for perfectly alive posts.
     status = res.status === 404 || res.status === 410 ? "dead" : "ok";
   } catch {
     status = "unknown";

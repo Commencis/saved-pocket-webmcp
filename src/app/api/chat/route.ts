@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
+import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { db } from "@/db/client";
 import { categories, items, user } from "@/db/schema";
-import { getServerAiKey, resolveModel } from "@/lib/claude";
+import { getServerAiKey, getServerProvider, resolveModel, type AiProvider } from "@/lib/claude";
 import { decrypt } from "@/lib/crypto";
 import { embedText } from "@/lib/embeddings";
 import { getSessionUser } from "@/lib/session";
@@ -31,11 +32,16 @@ export async function POST(request: Request) {
   const { message, collectionId } = parsed.data;
 
   const owner = await db.query.user.findFirst({ where: eq(user.id, sessionUser.id) });
-  const rawKey = owner?.anthropicApiKey?.trim();
-  const apiKey = rawKey ? decrypt(rawKey) : getServerAiKey();
+  const provider: AiProvider =
+    ((owner?.aiProvider ?? getServerProvider()) === "anthropic" ? "anthropic" : "openai");
+
+  const rawKey =
+    provider === "openai" ? owner?.openaiApiKey?.trim() : owner?.anthropicApiKey?.trim();
+  const apiKey = rawKey ? decrypt(rawKey) : getServerAiKey(provider);
+
   if (!apiKey) {
     return NextResponse.json(
-      { error: "No OpenAI API key configured. Add yours in Settings." },
+      { error: `No ${provider === "anthropic" ? "Anthropic" : "OpenAI"} API key configured. Add yours in Settings.` },
       { status: 402 },
     );
   }
@@ -107,20 +113,34 @@ export async function POST(request: Request) {
       : "No closely matching items found in the library.";
 
   const userMessage = `User question: ${message}\n\n---\nRelevant library items:\n\n${contextBlock}`;
+  const model = provider === "openai"
+    ? resolveModel("openai", owner?.openaiModel)
+    : resolveModel("anthropic", owner?.anthropicModel);
 
-  const openai = new OpenAI({ apiKey });
-  const response = await openai.chat.completions.create({
-    model: resolveModel(owner?.anthropicModel),
-    max_tokens: 500,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userMessage },
-    ],
-  });
+  let text: string;
 
-  const text =
-    response.choices[0]?.message?.content ??
-    "Sorry, I couldn't generate an answer.";
+  if (provider === "anthropic") {
+    const anthropic = new Anthropic({ apiKey });
+    const response = await anthropic.messages.create({
+      model,
+      max_tokens: 500,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    });
+    const block = response.content.find((b) => b.type === "text") as Anthropic.TextBlock | undefined;
+    text = block?.text ?? "Sorry, I couldn't generate an answer.";
+  } else {
+    const openai = new OpenAI({ apiKey });
+    const response = await openai.chat.completions.create({
+      model,
+      max_tokens: 500,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userMessage },
+      ],
+    });
+    text = response.choices[0]?.message?.content ?? "Sorry, I couldn't generate an answer.";
+  }
 
   return NextResponse.json({
     answer: text,

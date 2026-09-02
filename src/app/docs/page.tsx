@@ -121,6 +121,7 @@ const toc = [
   { id: "quickstart", label: "Quick Start (Docker)" },
   { id: "local-dev", label: "Local Development" },
   { id: "env-vars", label: "Environment Variables" },
+  { id: "ai-provider", label: "AI Provider" },
   { id: "extension", label: "Chrome Extension" },
   { id: "ext-install", label: "↳ Installation" },
   { id: "ext-popup", label: "↳ Extension Popup" },
@@ -257,12 +258,67 @@ npm run dev                        # http://localhost:3000`}</Pre>
             headers={["Variable", "Required", "Description"]}
             rows={[
               [<Code>BETTER_AUTH_SECRET</Code>, "✅", <>Random secret for session signing — <Code>openssl rand -hex 32</Code>.</>],
-              [<Code>OPENAI_API_KEY</Code>, "⬜", "Server-wide fallback key for AI analysis. Each user can set their own key in Settings, which takes precedence. Without any key, items are stored but not analyzed."],
+              [<Code>AI_PROVIDER</Code>, "⬜", <>Which AI provider to use server-wide: <Code>openai</Code> (default) or <Code>anthropic</Code>. Individual users can override their own provider in Settings.</>],
+              [<Code>OPENAI_API_KEY</Code>, "⬜", "Server-wide fallback OpenAI key. Users can set their own key in Settings → OpenAI tab."],
+              [<Code>AI_MODEL</Code>, "⬜", <>OpenAI model override. Defaults to <Code>gpt-4o-mini</Code>.</>],
+              [<Code>ANTHROPIC_API_KEY</Code>, "⬜", "Server-wide fallback Anthropic key. Users can set their own key in Settings → Anthropic tab."],
+              [<Code>ANTHROPIC_MODEL</Code>, "⬜", <>Anthropic model override. Defaults to <Code>claude-haiku-4-5-20251001</Code>.</>],
               [<Code>DATABASE_URL</Code>, "dev only", <>Postgres connection string. Docker Compose sets it automatically. Default: <Code>postgresql://savedpocket:savedpocket@localhost:5432/savedpocket</Code></>],
-              [<Code>AI_MODEL</Code>, "⬜", <>Defaults to <Code>gpt-4o-mini</Code>.</>],
               [<Code>BETTER_AUTH_URL</Code>, "⬜", <>Public URL of the app. Defaults to <Code>http://localhost:3000</Code>.</>],
               [<Code>IMAGE_CACHE_DIR</Code>, "⬜", <>Where downloaded images are cached. Defaults to <Code>./data/images</Code>.</>],
               [<Code>MODEL_CACHE_DIR</Code>, "⬜", <>Where HuggingFace embedding model files are cached. Defaults to <Code>./data/models</Code>. Docker Compose sets this automatically.</>],
+            ]}
+          />
+
+          {/* ── AI PROVIDER ─────────────────────────────────────────── */}
+          <H2 id="ai-provider">AI Provider</H2>
+          <P>
+            SavedPocket supports both <strong>OpenAI</strong> and <strong>Anthropic</strong> as AI backends for item analysis, re-analysis, and chat. You can configure the provider at the server level (env vars) or per-user (Settings dialog).
+          </P>
+
+          <H3 id="ai-provider-server">Server-Level (env vars)</H3>
+          <P>Set these in your <Code>.env</Code> file (or Docker Compose environment) to define the default for all users:</P>
+          <Pre title=".env">{`# Use OpenAI (default)
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+AI_MODEL=gpt-4o-mini          # optional; default is gpt-4o-mini
+
+# — OR — use Anthropic
+AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001   # optional`}</Pre>
+          <Callout type="tip">
+            <p>You can also set <em>both</em> <Code>OPENAI_API_KEY</Code> and <Code>ANTHROPIC_API_KEY</Code> as server-wide fallbacks, and let each user choose their own provider in Settings.</p>
+          </Callout>
+
+          <H3 id="ai-provider-user">Per-User (Settings)</H3>
+          <P>Open Settings (gear icon in the sidebar) → <strong>AI integration</strong>. Two tabs appear:</P>
+          <UL items={[
+            <><strong>OpenAI tab</strong> — paste a key (format: <Code>sk-…</Code>), pick a model (<Code>gpt-4o-mini</Code>, <Code>gpt-4o</Code>, <Code>gpt-4.1</Code>), click Save.</>,
+            <><strong>Anthropic tab</strong> — paste a key (format: <Code>sk-ant-…</Code>), pick a model (<Code>claude-haiku-4-5</Code>, <Code>claude-sonnet-4-5</Code>, <Code>claude-opus-4-5</Code>), click Save &amp; switch to Anthropic.</>,
+          ]} />
+          <P>Whichever provider you save last becomes your active provider. A green dot on the tab indicates the currently active one.</P>
+
+          <H3 id="ai-provider-precedence">Precedence</H3>
+          <Table
+            headers={["Priority", "Source"]}
+            rows={[
+              ["1 (highest)", "User's own key in the database (set via Settings)"],
+              ["2", <>Server-wide env var (<Code>OPENAI_API_KEY</Code> or <Code>ANTHROPIC_API_KEY</Code>)</>],
+              ["3 (fallback)", "Items stored without analysis if no key is configured"],
+            ]}
+          />
+
+          <H3 id="ai-provider-models">Models</H3>
+          <Table
+            headers={["Provider", "Model", "Notes"]}
+            rows={[
+              ["OpenAI", <Code>gpt-4o-mini</Code>, "Default — fast, cheap, good for most items"],
+              ["OpenAI", <Code>gpt-4o</Code>, "Used automatically for visual re-analysis when model is gpt-4o-mini"],
+              ["OpenAI", <Code>gpt-4.1</Code>, "Latest and most capable"],
+              ["Anthropic", <Code>claude-haiku-4-5-20251001</Code>, "Default — fast, cheap, vision-capable"],
+              ["Anthropic", <Code>claude-sonnet-4-5-20251001</Code>, "Smarter analysis"],
+              ["Anthropic", <Code>claude-opus-4-5</Code>, "Most capable"],
             ]}
           />
 
@@ -658,7 +714,7 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
             The chat button in the toolbar opens a dialog where you can ask questions about your library. The query is embedded, top-K nearest items are retrieved, and an AI model answers with inline item links. Responses render as formatted Markdown.
           </P>
           <Callout type="info">
-            <p>Chat requires an OpenAI API key (server-wide in <Code>.env</Code> or per-user in Settings → AI integration).</p>
+            <p>Chat uses whichever AI provider is active for the user (OpenAI or Anthropic). Configure in Settings → AI integration, or set <Code>AI_PROVIDER</Code> + the corresponding key in <Code>.env</Code>.</p>
           </Callout>
 
           <H3 id="search-ai-analysis">AI Analysis</H3>
@@ -814,8 +870,8 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
               ["GET", <Code>/api/digest</Code>, "Weekly stats + rediscover suggestions."],
               ["GET", <Code>/api/sync/status</Code>, "Check background sync job status."],
               ["GET", <Code>/api/images/[itemId]</Code>, "Serve cached item image."],
-              ["GET", <Code>/api/settings/ai</Code>, "Current user's AI config — whether a user/server key is set, masked key, and effective model."],
-              ["PUT", <Code>/api/settings/ai</Code>, <>Save per-user OpenAI API key and/or model. Body: <Code>&#123; apiKey?, model? &#125;</Code>. Validates credentials before saving; re-queues previously failed analyses on success.</>],
+              ["GET", <Code>/api/settings/ai</Code>, <>Returns current AI config: active provider, and for each provider (openai/anthropic) whether a user/server key is set, masked key, and effective model.</>],
+              ["PUT", <Code>/api/settings/ai</Code>, <>Save per-user AI key and/or model. Body: <Code>&#123; provider: "openai"|"anthropic", apiKey?, model? &#125;</Code>. Validates credentials before saving; sets the provider as active; re-queues previously failed analyses on success.</>],
             ]}
           />
 

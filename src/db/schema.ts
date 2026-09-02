@@ -59,6 +59,9 @@ export const user = pgTable("user", {
     .notNull()
     .unique()
     .default(sql`(gen_random_uuid())::text`),
+  openaiApiKey: text("openai_api_key"),
+  openaiModel: text("openai_model"),
+  aiProvider: text("ai_provider").notNull().default("openai"),
   anthropicApiKey: text("anthropic_api_key"),
   anthropicModel: text("anthropic_model"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
