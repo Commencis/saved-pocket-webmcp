@@ -1,6 +1,7 @@
 "use client";
 
 import { Bookmark, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -32,7 +33,12 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-neutral-50 p-4 gap-4">
+      <div className="w-full max-w-sm">
+        <Link href="/" className="mb-3 inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600">
+          ← Home
+        </Link>
+      </div>
       <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h1 className="mb-1 flex items-center gap-2 text-xl font-bold">
           <Bookmark className="h-6 w-6" /> SavedPocket
@@ -92,6 +98,11 @@ export default function LoginPage() {
             ? "No account yet? Create one"
             : "Already have an account? Sign in"}
         </button>
+      </div>
+
+      <div className="flex gap-4 text-xs text-neutral-400 justify-center">
+        <Link href="/legal" className="hover:text-neutral-600">Legal</Link>
+        <Link href="/docs" className="hover:text-neutral-600">Docs</Link>
       </div>
     </main>
   );

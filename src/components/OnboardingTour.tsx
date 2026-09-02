@@ -88,7 +88,7 @@ export function OnboardingTour({ onOpenChat }: { onOpenChat: () => void }) {
           popover: {
             title: "Settings",
             description:
-              "Add your Anthropic API key to unlock AI analysis. Your key is stored only in your local database.",
+              "Add your OpenAI API key to unlock AI analysis. Your key is stored only in your local database.",
             side: "bottom",
             align: "end",
           },

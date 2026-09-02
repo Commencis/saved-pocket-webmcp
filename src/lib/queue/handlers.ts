@@ -21,7 +21,7 @@ export async function handleAnalyzeItem(itemId: string): Promise<void> {
     // 401 marks the failure as permanent (no pointless retries)
     throw Object.assign(
       new Error(
-        "No Anthropic API key configured. Add yours in Settings (gear icon), then re-analyze.",
+        "No OpenAI API key configured. Add yours in Settings (gear icon), then re-analyze.",
       ),
       { status: 401 },
     );
@@ -95,7 +95,7 @@ export async function handleAnalyzeItemWithImage(itemId: string): Promise<void> 
   const apiKey = rawKey ? decrypt(rawKey) : getServerAiKey();
   if (!apiKey) {
     throw Object.assign(
-      new Error("No Anthropic API key configured. Add yours in Settings (gear icon), then re-analyze."),
+      new Error("No OpenAI API key configured. Add yours in Settings (gear icon), then re-analyze."),
       { status: 401 },
     );
   }

@@ -1,14 +1,14 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { z } from "zod";
 
-const DEFAULT_MODEL = "claude-haiku-4-5";
+const DEFAULT_MODEL = "gpt-4o-mini";
 
 export function getServerAiKey(): string | null {
-  return process.env.ANTHROPIC_API_KEY?.trim() || null;
+  return process.env.OPENAI_API_KEY?.trim() || null;
 }
 
 export function resolveModel(userModel?: string | null): string {
-  return userModel?.trim() || process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
+  return userModel?.trim() || process.env.AI_MODEL?.trim() || DEFAULT_MODEL;
 }
 
 export interface AiCredentials {
@@ -16,16 +16,18 @@ export interface AiCredentials {
   model?: string | null;
 }
 
-/** Cheap key validation via the free count_tokens endpoint. Throws on bad key/model. */
+/** Validate key by listing models — no cost, fast. Throws on bad key/model. */
 export async function verifyAiCredentials(creds: AiCredentials): Promise<void> {
-  const anthropic = new Anthropic({ apiKey: creds.apiKey });
-  await anthropic.messages.countTokens({
-    model: resolveModel(creds.model),
-    messages: [{ role: "user", content: "ping" }],
-  });
+  const openai = new OpenAI({ apiKey: creds.apiKey });
+  const model = resolveModel(creds.model);
+  // Cheapest validation: list models and confirm the requested model exists
+  const list = await openai.models.list();
+  if (creds.model && !list.data.some((m) => m.id === model)) {
+    throw Object.assign(new Error(`Model not found: ${model}`), { status: 404 });
+  }
 }
 
-const SYSTEM_PROMPT = `You are the content analyst for SavedPocket, a personal bookmarking app that unifies posts a user has saved across Instagram, LinkedIn, Reddit, X (Twitter), YouTube, and the open web. Your job: given whatever metadata is available for one saved item, assign it a category, a set of tags, and a short summary by calling the save_analysis tool. You must ALWAYS call the tool exactly once, even when metadata is sparse.
+const SYSTEM_PROMPT = `You are the content analyst for SavedPocket, a personal bookmarking app that unifies posts a user has saved across Instagram, LinkedIn, X (Twitter), YouTube, and the open web. Your job: given whatever metadata is available for one saved item, assign it a category, a set of tags, and a short summary by calling the save_analysis function. You must ALWAYS call the function exactly once, even when metadata is sparse.
 
 ## Category rules
 - You will receive the user's current category list in the message. STRONGLY prefer an existing category: pick the closest reasonable match rather than inventing a near-duplicate (e.g. do not create "Software" when "Programming" exists, or "Cooking" when "Food" exists).
@@ -43,7 +45,7 @@ const SYSTEM_PROMPT = `You are the content analyst for SavedPocket, a personal b
 - If metadata is sparse, describe what can be inferred and keep it short rather than speculating wildly.
 
 ## Sparse metadata
-- Sometimes you only get a URL (login-walled pages). Infer what you can from the domain, path segments, slugs, and platform conventions (e.g. an instagram.com/reel/ URL is a short video; a reddit.com/r/fitness/ URL is about fitness). Be conservative: prefer "Other" and generic tags over confident guesses.
+- Sometimes you only get a URL (login-walled pages). Infer what you can from the domain, path segments, slugs, and platform conventions (e.g. an instagram.com/reel/ URL is a short video). Be conservative: prefer "Other" and generic tags over confident guesses.
 - Platform alone is NOT a category signal: an Instagram post can be about finance, a LinkedIn post about cooking. Categorize by content, not source.
 
 ## Quality bar
@@ -51,34 +53,36 @@ const SYSTEM_PROMPT = `You are the content analyst for SavedPocket, a personal b
 - When the title is clickbait, look at the description for the real topic.
 - Non-English content: still produce English category/tags/summary describing it.`;
 
-const saveAnalysisTool: Anthropic.Tool = {
-  name: "save_analysis",
-  description:
-    "Save the categorization result for one saved item. Must be called exactly once per item.",
-  input_schema: {
-    type: "object",
-    properties: {
-      category: {
-        type: "string",
-        description:
-          "Category name. Prefer one from the provided existing list.",
+const saveAnalysisTool: OpenAI.ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "save_analysis",
+    description:
+      "Save the categorization result for one saved item. Must be called exactly once per item.",
+    parameters: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Category name. Prefer one from the provided existing list.",
+        },
+        is_new_category: {
+          type: "boolean",
+          description:
+            "True only if the category is not in the provided list and a new one is clearly warranted.",
+        },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "3-6 lowercase tags, hyphenated phrases allowed.",
+        },
+        summary: {
+          type: "string",
+          description: "1-2 sentence factual summary of the item.",
+        },
       },
-      is_new_category: {
-        type: "boolean",
-        description:
-          "True only if the category is not in the provided list and a new one is clearly warranted.",
-      },
-      tags: {
-        type: "array",
-        items: { type: "string" },
-        description: "3-6 lowercase tags, hyphenated phrases allowed.",
-      },
-      summary: {
-        type: "string",
-        description: "1-2 sentence factual summary of the item.",
-      },
+      required: ["category", "is_new_category", "tags", "summary"],
     },
-    required: ["category", "is_new_category", "tags", "summary"],
   },
 };
 
@@ -115,7 +119,7 @@ export async function analyzeItem(
   existingCategories: string[],
   creds: AiCredentials,
 ): Promise<AnalysisResult> {
-  const anthropic = new Anthropic({ apiKey: creds.apiKey });
+  const openai = new OpenAI({ apiKey: creds.apiKey });
   const categoryGuidance =
     existingCategories.length >= 40
       ? "The category list is already large — you MUST pick an existing category, do not create new ones."
@@ -131,37 +135,29 @@ export async function analyzeItem(
     categoryGuidance,
   ].join("\n");
 
-  const response = await anthropic.messages.create({
+  const response = await openai.chat.completions.create({
     model: resolveModel(creds.model),
     max_tokens: 600,
     temperature: 0.2,
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userMessage },
     ],
     tools: [saveAnalysisTool],
-    tool_choice: { type: "tool", name: "save_analysis" },
-    messages: [{ role: "user", content: userMessage }],
+    tool_choice: { type: "function", function: { name: "save_analysis" } },
   });
 
-  const toolUse = response.content.find(
-    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
-  );
-  if (!toolUse) throw new Error("Model did not return a tool call");
+  const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+  if (!toolCall) throw new Error("Model did not return a tool call");
 
-  const parsed = analysisSchema.parse(toolUse.input);
+  const parsed = analysisSchema.parse(JSON.parse(toolCall.function.arguments));
   return {
     category: parsed.category.trim(),
     isNewCategory: parsed.is_new_category,
-    tags: [...new Set(parsed.tags.map((t) => t.trim().toLowerCase()))].filter(
-      Boolean,
-    ),
+    tags: [...new Set(parsed.tags.map((t) => t.trim().toLowerCase()))].filter(Boolean),
     summary: parsed.summary.trim(),
-    tokensIn: response.usage.input_tokens,
-    tokensOut: response.usage.output_tokens,
+    tokensIn: response.usage?.prompt_tokens ?? 0,
+    tokensOut: response.usage?.completion_tokens ?? 0,
   };
 }
 
@@ -171,7 +167,7 @@ export async function analyzeItemWithImage(
   existingCategories: string[],
   creds: AiCredentials,
 ): Promise<AnalysisResult> {
-  const anthropic = new Anthropic({ apiKey: creds.apiKey });
+  const openai = new OpenAI({ apiKey: creds.apiKey });
   const categoryGuidance =
     existingCategories.length >= 40
       ? "The category list is already large — you MUST pick an existing category, do not create new ones."
@@ -189,51 +185,37 @@ export async function analyzeItemWithImage(
     "An image of this item is provided above. Use the visual content to enrich your categorization if it reveals information not present in the text metadata.",
   ].join("\n");
 
-  const response = await anthropic.messages.create({
-    model: resolveModel(creds.model),
+  const response = await openai.chat.completions.create({
+    model: resolveModel(creds.model) === DEFAULT_MODEL ? "gpt-4o" : resolveModel(creds.model),
     max_tokens: 600,
     temperature: 0.2,
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    tools: [saveAnalysisTool],
-    tool_choice: { type: "tool", name: "save_analysis" },
     messages: [
+      { role: "system", content: SYSTEM_PROMPT },
       {
         role: "user",
         content: [
           {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: image.mediaType,
-              data: image.data,
-            },
+            type: "image_url",
+            image_url: { url: `data:${image.mediaType};base64,${image.data}` },
           },
           { type: "text", text: textContent },
         ],
       },
     ],
+    tools: [saveAnalysisTool],
+    tool_choice: { type: "function", function: { name: "save_analysis" } },
   });
 
-  const toolUse = response.content.find(
-    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
-  );
-  if (!toolUse) throw new Error("Model did not return a tool call");
+  const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+  if (!toolCall) throw new Error("Model did not return a tool call");
 
-  const parsed = analysisSchema.parse(toolUse.input);
+  const parsed = analysisSchema.parse(JSON.parse(toolCall.function.arguments));
   return {
     category: parsed.category.trim(),
     isNewCategory: parsed.is_new_category,
-    tags: [...new Set(parsed.tags.map((t) => t.trim().toLowerCase()))].filter(
-      Boolean,
-    ),
+    tags: [...new Set(parsed.tags.map((t) => t.trim().toLowerCase()))].filter(Boolean),
     summary: parsed.summary.trim(),
-    tokensIn: response.usage.input_tokens,
-    tokensOut: response.usage.output_tokens,
+    tokensIn: response.usage?.prompt_tokens ?? 0,
+    tokensOut: response.usage?.completion_tokens ?? 0,
   };
 }

@@ -184,6 +184,10 @@ export default function DocsPage() {
             <><strong>Findability</strong> — weighted PostgreSQL full-text + semantic vector search across everything.</>,
           ]} />
 
+          <Callout type="info">
+            <p><strong>Personal data & enterprise use:</strong> SavedPocket only processes content from your own accounts. For enterprise deployments where employee data is integrated into the system, a written data-processing agreement with the relevant organization must be in place before onboarding. See <a href="/legal" className="underline">LEGAL_NOTICE.md</a> for full usage terms.</p>
+          </Callout>
+
           {/* ── FEATURES ─────────────────────────────────────────── */}
           <H2 id="features">Features</H2>
           <UL items={[
@@ -205,13 +209,13 @@ export default function DocsPage() {
             <><strong>Dead link detection</strong> — background job checks every URL every 30 days; 404/410 responses get a "link broken" badge.</>,
             <><strong>Export all items</strong> — one-click JSON or CSV export of your entire library (toolbar buttons).</>,
             <><strong>PWA + Web Share Target</strong> — installable as a mobile app; share links from any app on your phone.</>,
-            <><strong>Multi-user</strong> — email/password auth (better-auth); each user sees only their own items. Anthropic API keys encrypted at rest (AES-256-GCM).</>,
+            <><strong>Multi-user</strong> — email/password auth (better-auth); each user sees only their own items. OpenAI API keys encrypted at rest (AES-256-GCM).</>,
             <><strong>3-layer deduplication</strong> — normalized URL, platform+external ID, and extension-side session dedup.</>,
           ]} />
 
           {/* ── QUICK START ─────────────────────────────────────────── */}
           <H2 id="quickstart">Quick Start (Docker)</H2>
-          <P>Prerequisites: <a href="https://www.docker.com/" className="text-blue-600 underline">Docker</a> and an Anthropic API key (optional — each user can add their own key in-app).</P>
+          <P>Prerequisites: <a href="https://www.docker.com/" className="text-blue-600 underline">Docker</a> and an OpenAI API key (optional — each user can add their own key in-app).</P>
           <Pre title="Terminal">{`# 1. Clone and enter the project
 git clone <this-repo-url> savedpocket
 cd savedpocket
@@ -253,9 +257,9 @@ npm run dev                        # http://localhost:3000`}</Pre>
             headers={["Variable", "Required", "Description"]}
             rows={[
               [<Code>BETTER_AUTH_SECRET</Code>, "✅", <>Random secret for session signing — <Code>openssl rand -hex 32</Code>.</>],
-              [<Code>ANTHROPIC_API_KEY</Code>, "⬜", "Server-wide fallback key for AI analysis. Each user can set their own key in Settings, which takes precedence. Without any key, items are stored but not analyzed."],
+              [<Code>OPENAI_API_KEY</Code>, "⬜", "Server-wide fallback key for AI analysis. Each user can set their own key in Settings, which takes precedence. Without any key, items are stored but not analyzed."],
               [<Code>DATABASE_URL</Code>, "dev only", <>Postgres connection string. Docker Compose sets it automatically. Default: <Code>postgresql://savedpocket:savedpocket@localhost:5432/savedpocket</Code></>],
-              [<Code>ANTHROPIC_MODEL</Code>, "⬜", <>Defaults to <Code>claude-haiku-4-5</Code>.</>],
+              [<Code>AI_MODEL</Code>, "⬜", <>Defaults to <Code>gpt-4o-mini</Code>.</>],
               [<Code>BETTER_AUTH_URL</Code>, "⬜", <>Public URL of the app. Defaults to <Code>http://localhost:3000</Code>.</>],
               [<Code>IMAGE_CACHE_DIR</Code>, "⬜", <>Where downloaded images are cached. Defaults to <Code>./data/images</Code>.</>],
               [<Code>MODEL_CACHE_DIR</Code>, "⬜", <>Where HuggingFace embedding model files are cached. Defaults to <Code>./data/models</Code>. Docker Compose sets this automatically.</>],
@@ -588,6 +592,9 @@ Claude: [calls list_collections → get_collection_items(3)]
           <Callout type="info">
             <p><strong>How it differs from the MCP Server:</strong> The server-side MCP requires Claude Desktop / Cursor installation and an API key. WebMCP works entirely in the browser — any WebMCP-aware agent (ChatGPT browser mode) that visits your dashboard gains immediate access to your library through the tools below. For external agents that browse in their own isolated context, use the <a href="/webmcp" className="text-blue-600 underline">WebMCP Gateway</a> with an API key.</p>
           </Callout>
+          <Callout type="warn">
+            <p><strong>Platform transition note:</strong> Current platform integrations (Instagram, LinkedIn, X, YouTube) rely on the Chrome extension accessing pages you already have open — no platform passwords are stored or transmitted. As the <a href="https://webmachinelearning.github.io/webmcp/" className="text-blue-600 underline">WebMCP standard</a> (W3C draft) matures and platforms adopt it, SavedPocket will migrate to accessing data through platforms' own agreed APIs under their Terms of Service, replacing extension-based collection with a consent-based data model.</p>
+          </Callout>
 
           <H3 id="webmcp-tools">Registered Tools</H3>
           <Table
@@ -648,10 +655,10 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
 
           <H3 id="search-rag">RAG Chat</H3>
           <P>
-            The chat button in the toolbar opens a dialog where you can ask questions about your library. The query is embedded, top-K nearest items are retrieved, and Claude answers with inline item links. Responses render as formatted Markdown.
+            The chat button in the toolbar opens a dialog where you can ask questions about your library. The query is embedded, top-K nearest items are retrieved, and an AI model answers with inline item links. Responses render as formatted Markdown.
           </P>
           <Callout type="info">
-            <p>Chat requires an Anthropic API key (server-wide in <Code>.env</Code> or per-user in Settings → AI integration).</p>
+            <p>Chat requires an OpenAI API key (server-wide in <Code>.env</Code> or per-user in Settings → AI integration).</p>
           </Callout>
 
           <H3 id="search-ai-analysis">AI Analysis</H3>
@@ -689,13 +696,13 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
                                  │  category + tags + summary           │
                                  └──────────────────────────────────────┘`}</Pre>
 
-          <P><strong>Stack:</strong> Next.js 15 (full-stack, TypeScript) · Drizzle ORM · PostgreSQL 16 + pgvector · better-auth · Anthropic SDK · <Code>@huggingface/transformers</Code> (multilingual-e5-small, CPU) · Tailwind CSS 4 · Chrome extension (vanilla JS, MV3, no build step).</P>
+          <P><strong>Stack:</strong> Next.js 15 (full-stack, TypeScript) · Drizzle ORM · PostgreSQL 16 + pgvector · better-auth · OpenAI SDK · <Code>@huggingface/transformers</Code> (multilingual-e5-small, CPU) · Tailwind CSS 4 · Chrome extension (vanilla JS, MV3, no build step).</P>
 
           <H3 id="arch-data-flow">Data Flow</H3>
           <P>ingest → normalize URL &amp; detect platform → dedup check → store item + enqueue jobs → worker claims jobs (SKIP LOCKED, concurrency 2, 3 retries) → Claude returns structured JSON → category resolved, tags + summary stored → search vector (<Code>tsvector</Code>) and vector embedding (<Code>vector(384)</Code>) updated → link status checked periodically.</P>
 
           <H3 id="arch-encryption">Encryption</H3>
-          <P><Code>BETTER_AUTH_SECRET</Code> is SHA-256 hashed into a 32-byte AES-256-GCM key. All Anthropic API keys are encrypted before writing to Postgres and decrypted on read. Existing plaintext values are migrated automatically on first boot.</P>
+          <P><Code>BETTER_AUTH_SECRET</Code> is SHA-256 hashed into a 32-byte AES-256-GCM key. All OpenAI API keys are encrypted before writing to Postgres and decrypted on read. Existing plaintext values are migrated automatically on first boot.</P>
 
           {/* ── PROJECT STRUCTURE ─────────────────────────────────────────── */}
           <H2 id="project-structure">Project Structure</H2>
@@ -741,7 +748,7 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
         │   ├── items/        # list/search, detail, visit tracking, bulk
         │   ├── marketplace/  # public collections listing
         │   ├── me/           # profile + API key (session or key auth)
-        │   └── settings/ai/  # per-user Anthropic key management
+        │   └── settings/ai/  # per-user OpenAI key management
         ├── docs/             # this page
         ├── marketplace/      # public collections browser
         ├── webmcp/           # WebMCP Gateway — browser-accessible MCP endpoint
@@ -808,7 +815,7 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
               ["GET", <Code>/api/sync/status</Code>, "Check background sync job status."],
               ["GET", <Code>/api/images/[itemId]</Code>, "Serve cached item image."],
               ["GET", <Code>/api/settings/ai</Code>, "Current user's AI config — whether a user/server key is set, masked key, and effective model."],
-              ["PUT", <Code>/api/settings/ai</Code>, <>Save per-user Anthropic API key and/or model. Body: <Code>&#123; apiKey?, model? &#125;</Code>. Validates credentials before saving; re-queues previously failed analyses on success.</>],
+              ["PUT", <Code>/api/settings/ai</Code>, <>Save per-user OpenAI API key and/or model. Body: <Code>&#123; apiKey?, model? &#125;</Code>. Validates credentials before saving; re-queues previously failed analyses on success.</>],
             ]}
           />
 

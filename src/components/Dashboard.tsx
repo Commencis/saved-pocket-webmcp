@@ -53,6 +53,7 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
   const [selectedItem, setSelectedItem] = useState<ItemDto | null>(null);
   const [jobCounts, setJobCounts] = useState<JobCounts>({});
   const [extensionKey, setExtensionKey] = useState<string | null>(null);
+  const [extInstalled, setExtInstalled] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -164,6 +165,13 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
     setLoading(true);
     void loadFirstPage();
   }, [loadFirstPage]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setExtInstalled(document.documentElement.hasAttribute("data-savedpocket-ext"));
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     void loadCategories();
@@ -302,7 +310,9 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
           {/* Row 1: logo + controls */}
           <div className="flex items-center gap-4">
             <h1 className="flex items-center gap-2 text-xl font-bold">
-              <Bookmark className="h-6 w-6" /> SavedPocket
+              <Link href="/" className="flex items-center gap-2 hover:opacity-75 transition-opacity">
+                <Bookmark className="h-6 w-6" /> SavedPocket
+              </Link>
             </h1>
             <div className="ml-auto flex items-center gap-3">
               {activeJobs > 0 && (
@@ -397,6 +407,33 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
           </div>
         </div>
       </header>
+
+      {/* Extension install banner — always visible */}
+      <div className="border-b border-blue-100 bg-blue-50 px-6 py-2">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="text-xs text-blue-800">
+            <strong>Chrome Extension:</strong>{" "}
+            {extInstalled
+              ? "Extension is active — saves posts from Instagram, LinkedIn, X & YouTube automatically."
+              : "Install the SavedPocket Chrome extension to automatically collect posts from Instagram, LinkedIn, X & YouTube."}
+          </span>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <Link
+              href="/docs#extension"
+              className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              View docs →
+            </Link>
+            <a
+              href="/savedpocket-extension.zip"
+              download
+              className="rounded-md bg-blue-700 px-3 py-1 text-xs font-medium text-white hover:bg-blue-800"
+            >
+              Download extension
+            </a>
+          </div>
+        </div>
+      </div>
 
       <div className="mx-auto flex max-w-7xl gap-6 p-6">
         <CategorySidebar

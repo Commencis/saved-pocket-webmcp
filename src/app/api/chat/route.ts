@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { db } from "@/db/client";
 import { categories, items, user } from "@/db/schema";
 import { getServerAiKey, resolveModel } from "@/lib/claude";
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   const apiKey = rawKey ? decrypt(rawKey) : getServerAiKey();
   if (!apiKey) {
     return NextResponse.json(
-      { error: "No Anthropic API key configured. Add yours in Settings." },
+      { error: "No OpenAI API key configured. Add yours in Settings." },
       { status: 402 },
     );
   }
@@ -108,16 +108,18 @@ export async function POST(request: Request) {
 
   const userMessage = `User question: ${message}\n\n---\nRelevant library items:\n\n${contextBlock}`;
 
-  const anthropic = new Anthropic({ apiKey });
-  const response = await anthropic.messages.create({
+  const openai = new OpenAI({ apiKey });
+  const response = await openai.chat.completions.create({
     model: resolveModel(owner?.anthropicModel),
     max_tokens: 500,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userMessage },
+    ],
   });
 
   const text =
-    response.content.find((b) => b.type === "text")?.text ??
+    response.choices[0]?.message?.content ??
     "Sorry, I couldn't generate an answer.";
 
   return NextResponse.json({

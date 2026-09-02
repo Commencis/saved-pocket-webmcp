@@ -64,7 +64,7 @@ export async function PUT(request: Request) {
           ? "Invalid API key"
           : status === 404
             ? "Unknown model"
-            : "Could not verify credentials with the Anthropic API";
+            : "Could not verify credentials with the OpenAI API";
       return NextResponse.json({ error: reason }, { status: 400 });
     }
   }

@@ -31,6 +31,7 @@ ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
 # SQL migrations run automatically on startup (src/instrumentation.ts)
 COPY --from=builder /app/drizzle ./drizzle
 # onnxruntime-node native bindings (needed for local embedding model)

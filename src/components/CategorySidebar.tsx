@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Copy, Plus } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { PLATFORMS, PLATFORM_STYLES, type CategoryDto, type CollectionDto } from "@/lib/types";
 import { CollectionDialog } from "./CollectionDialog";
@@ -196,6 +197,11 @@ export function CategorySidebar({
           }}
         />
       )}
+
+      <div className="mt-auto border-t border-neutral-100 px-3 py-2 flex gap-3">
+        <Link href="/legal" className="text-xs text-neutral-400 hover:text-neutral-600">Legal</Link>
+        <Link href="/docs" className="text-xs text-neutral-400 hover:text-neutral-600">Docs</Link>
+      </div>
     </aside>
   );
 }

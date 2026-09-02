@@ -15,6 +15,11 @@
   "content_scripts": [
     {
       "matches": ["https://*/*", "http://*/*"],
+      "js": ["content/signal.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://*/*", "http://*/*"],
       "exclude_matches": ["http://localhost:3000/*"],
       "js": ["content/save-anywhere.js"],
       "run_at": "document_idle"

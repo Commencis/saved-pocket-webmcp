@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import type { JobCounts } from "@/lib/types";
 
 const MODEL_OPTIONS = [
-  { value: "", label: "Default (claude-haiku-4-5) — fast & cheap" },
-  { value: "claude-sonnet-4-6", label: "claude-sonnet-4-6 — smarter" },
-  { value: "claude-opus-4-7", label: "claude-opus-4-7 — most capable" },
+  { value: "", label: "Default (gpt-4o-mini) — fast & cheap" },
+  { value: "gpt-4o", label: "gpt-4o — smarter, vision-capable" },
+  { value: "gpt-4.1", label: "gpt-4.1 — latest & most capable" },
 ];
 
 interface AiSettings {
@@ -115,16 +115,16 @@ export function SettingsDialog({
               AI integration
             </h3>
             <p className="text-xs text-neutral-500">
-              SavedPocket uses the Anthropic API to categorize, tag and
+              SavedPocket uses the OpenAI API to categorize, tag and
               summarize your saved items. Your key is stored only in your local
               database and never leaves this app. Get one at{" "}
               <a
-                href="https://console.anthropic.com/settings/keys"
+                href="https://platform.openai.com/api-keys"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline"
               >
-                console.anthropic.com
+                platform.openai.com
               </a>
               .
             </p>
@@ -138,7 +138,7 @@ export function SettingsDialog({
 
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-xs font-medium text-neutral-500">
-                Anthropic API key
+                OpenAI API key
                 {settings.hasUserKey && settings.maskedKey && (
                   <span className="ml-2 font-mono text-neutral-400">
                     current: {settings.maskedKey}
@@ -154,7 +154,7 @@ export function SettingsDialog({
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-…"
+                placeholder="sk-…"
                 autoComplete="off"
                 className="rounded-lg border border-neutral-200 px-3 py-2 font-mono text-sm outline-none focus:border-neutral-400"
               />
