@@ -23,6 +23,7 @@ export function ChatWidget() {
   }, []);
 
   function handleOpenItem(id: string) {
+    setChatMinimized(true);
     window.dispatchEvent(new CustomEvent("savedpocket:open-item", { detail: { id } }));
   }
 
