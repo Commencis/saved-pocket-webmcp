@@ -73,9 +73,9 @@ const DEMO_ITEMS: DemoItem[] = [
   {
     url: "https://www.instagram.com/p/demo-manti-recipe/",
     platform: "instagram",
-    title: "Homemade Mantı — Turkish Dumplings",
+    title: "Homemade Manti — Turkish Dumplings",
     description: "Traditional Turkish dumplings with yogurt and spiced butter sauce. My grandmother's recipe, finally mastered.",
-    summary: "A home cook shares their grandmother's recipe for mantı, the beloved Turkish dumpling dish served with garlicky yogurt and paprika-infused butter. The post captures the meditative process of hand-shaping tiny dumplings and the reward of recreating a childhood comfort food.",
+    summary: "A home cook shares their grandmother's recipe for manti, the beloved Turkish dumpling dish served with garlicky yogurt and paprika-infused butter. The post captures the meditative process of hand-shaping tiny dumplings and the reward of recreating a childhood comfort food.",
     tags: ["turkish-cuisine", "homemade", "recipe", "comfort-food", "dumplings"],
     categoryName: "Food",
   },
@@ -83,8 +83,8 @@ const DEMO_ITEMS: DemoItem[] = [
     url: "https://www.instagram.com/p/demo-istanbul-golden-hour/",
     platform: "instagram",
     title: "Istanbul at Golden Hour",
-    description: "The Bosphorus at sunset from Üsküdar — this city never gets old.",
-    summary: "A sunset photograph from Üsküdar on the Asian side of Istanbul, capturing the Bosphorus bridge silhouetted against a copper sky. The caption reflects on the unique magic of a city straddling two continents, where every season brings a different version of the same iconic view.",
+    description: "The Bosphorus at sunset from Uskudar — this city never gets old.",
+    summary: "A sunset photograph from Uskudar on the Asian side of Istanbul, capturing the Bosphorus bridge silhouetted against a copper sky. The caption reflects on the unique magic of a city straddling two continents, where every season brings a different version of the same iconic view.",
     tags: ["istanbul", "travel", "photography", "turkey", "bosphorus"],
     categoryName: "Travel",
   },
@@ -255,7 +255,7 @@ const DEMO_ITEMS: DemoItem[] = [
 
 const DEMO_COLLECTIONS = [
   {
-    name: "Geliştirici Araçları",
+    name: "Developer Tools",
     description: "Programming tutorials, tools, and technical deep dives worth revisiting",
     slug: "demo-developer-tools",
     itemUrls: [
@@ -267,7 +267,7 @@ const DEMO_COLLECTIONS = [
     ],
   },
   {
-    name: "Kariyer & Büyüme",
+    name: "Career & Growth",
     description: "Career advice, productivity, and personal development saved for later",
     slug: "demo-career-growth",
     itemUrls: [
