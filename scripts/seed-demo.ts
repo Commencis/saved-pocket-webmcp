@@ -1,284 +1,314 @@
 /**
- * Seed demo data for the WebMCP challenge.
+ * Seed demo data for SavedPocket.
  *
  * Run with:
  *   DATABASE_URL=<url> npx tsx scripts/seed-demo.ts
+ *   DATABASE_URL=<url> npx tsx scripts/seed-demo.ts --reset   # wipe & re-seed
  *
- * Creates a demo user with a fixed API key, 3 collections, and 25 curated items
- * with pre-written summaries and tags (no Anthropic key required).
+ * Creates demouser@savedpocket.com (password: demouser2026), 20 multi-platform
+ * items, and 2 public collections. No AI API key required — all summaries and
+ * tags are pre-written.
  */
 
-import { db } from "../src/db/client";
-import { collectionItems, collections, items, user } from "../src/db/schema";
-import { eq } from "drizzle-orm";
 import crypto from "node:crypto";
+import { and, eq } from "drizzle-orm";
+import { db } from "../src/db/client";
+import {
+  account,
+  categories,
+  collectionItems,
+  collections,
+  items,
+  user,
+} from "../src/db/schema";
 
-const DEMO_EMAIL = "demo@savedpocket.app";
-const DEMO_API_KEY = "sp_demo_webmcp_challenge_2026";
+const DEMO_EMAIL = "demouser@savedpocket.com";
+const DEMO_PASSWORD = "demouser2026";
+const DEMO_API_KEY = "sp_demo_savedpocket_2026";
 const DEMO_NAME = "Demo User";
 
-const DEMO_ITEMS = [
-  // --- AI & Machine Learning ---
+const RESET = process.argv.includes("--reset");
+
+// ── Password hashing (matches better-auth's scrypt implementation) ────────────
+
+function hashPassword(pwd: string): Promise<string> {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const N = 16384, r = 16;
+  return new Promise((resolve, reject) =>
+    crypto.scrypt(
+      pwd.normalize("NFKC"),
+      salt,
+      64,
+      { N, r, p: 1, maxmem: 128 * N * r * 2 },
+      (err, key) => err ? reject(err) : resolve(`${salt}:${key.toString("hex")}`),
+    ),
+  );
+}
+
+// ── Demo items ────────────────────────────────────────────────────────────────
+
+type Platform = "instagram" | "linkedin" | "x" | "youtube" | "web";
+
+interface DemoItem {
+  url: string;
+  platform: Platform;
+  title: string;
+  description: string;
+  summary: string;
+  tags: string[];
+  categoryName: string;
+}
+
+const DEMO_ITEMS: DemoItem[] = [
+  // ── Instagram ──────────────────────────────────────────────────────────────
   {
-    url: "https://arxiv.org/abs/2307.09288",
-    title: "Llama 2: Open Foundation and Fine-Tuned Chat Models",
-    description: "Meta AI's Llama 2 paper introducing open-weight models from 7B to 70B parameters.",
-    summary: "Meta releases Llama 2, a family of pretrained and instruction-tuned large language models ranging from 7B to 70B parameters. The paper covers the pretraining methodology, RLHF fine-tuning, and extensive safety evaluations. Llama 2-Chat models outperform open-source alternatives on most benchmarks and are competitive with closed models like ChatGPT on helpfulness and safety.",
-    tags: ["ai", "llm", "meta", "open-source", "research"],
-    category: "AI & Machine Learning",
+    url: "https://www.instagram.com/p/demo-morning-routine/",
+    platform: "instagram",
+    title: "5 AM Morning Routine That Changed My Life",
+    description: "Wake up at 5, journal for 10 minutes, cold shower, no phone for the first hour. Six months in — different person.",
+    summary: "A personal recount of adopting a disciplined 5 AM morning routine. The author describes journaling, cold showers, and a phone-free first hour as the three habits that compounded into a significant lifestyle shift over six months. Simple, consistent, and genuinely transformative.",
+    tags: ["morning-routine", "productivity", "wellness", "habits", "mindset"],
+    categoryName: "Health & Fitness",
   },
   {
-    url: "https://www.anthropic.com/research/claude-character",
-    title: "Claude's Character",
-    description: "How Anthropic thinks about Claude's identity, values, and psychological stability.",
-    summary: "Anthropic describes Claude's genuine character traits — intellectual curiosity, warmth, playful wit, directness, and commitment to honesty — as authentically Claude's own, not just a performance. The piece explores how Claude maintains psychological stability when challenged and how its values emerged through training in a manner analogous to how humans develop character through nature and experience.",
-    tags: ["anthropic", "claude", "ai-safety", "character", "values"],
-    category: "AI & Machine Learning",
+    url: "https://www.instagram.com/p/demo-manti-recipe/",
+    platform: "instagram",
+    title: "Homemade Mantı — Turkish Dumplings",
+    description: "Traditional Turkish dumplings with yogurt and spiced butter sauce. My grandmother's recipe, finally mastered.",
+    summary: "A home cook shares their grandmother's recipe for mantı, the beloved Turkish dumpling dish served with garlicky yogurt and paprika-infused butter. The post captures the meditative process of hand-shaping tiny dumplings and the reward of recreating a childhood comfort food.",
+    tags: ["turkish-cuisine", "homemade", "recipe", "comfort-food", "dumplings"],
+    categoryName: "Food",
   },
   {
-    url: "https://karpathy.github.io/2015/05/21/rnn-effectiveness/",
-    title: "The Unreasonable Effectiveness of Recurrent Neural Networks",
-    description: "Andrej Karpathy's classic post demonstrating what character-level RNNs can learn.",
-    summary: "A landmark blog post showing that simple RNNs trained on raw text can learn remarkably complex structure — generating Shakespeare, Linux source code, and LaTeX papers that look plausible. Includes interactive demos and the famous char-rnn code. Helped popularize deep learning for sequence modeling before the Transformer era.",
-    tags: ["rnn", "deep-learning", "nlp", "karpathy", "neural-networks"],
-    category: "AI & Machine Learning",
+    url: "https://www.instagram.com/p/demo-istanbul-golden-hour/",
+    platform: "instagram",
+    title: "Istanbul at Golden Hour",
+    description: "The Bosphorus at sunset from Üsküdar — this city never gets old.",
+    summary: "A sunset photograph from Üsküdar on the Asian side of Istanbul, capturing the Bosphorus bridge silhouetted against a copper sky. The caption reflects on the unique magic of a city straddling two continents, where every season brings a different version of the same iconic view.",
+    tags: ["istanbul", "travel", "photography", "turkey", "bosphorus"],
+    categoryName: "Travel",
   },
   {
-    url: "https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf",
-    title: "Attention Is All You Need",
-    description: "The original Transformer paper that revolutionized natural language processing.",
-    summary: "Vaswani et al. introduce the Transformer architecture, replacing recurrent layers entirely with self-attention mechanisms. The model achieves state-of-the-art on machine translation tasks with significantly less training time. This paper is the foundation for every modern LLM including GPT, BERT, and Claude.",
-    tags: ["transformer", "attention", "nlp", "research", "foundational"],
-    category: "AI & Machine Learning",
-  },
-  {
-    url: "https://simonwillison.net/2023/Oct/23/embeddings/",
-    title: "Embeddings: What they are and why they matter",
-    description: "Simon Willison's practical guide to vector embeddings for developers.",
-    summary: "A clear explanation of what embeddings are, how they encode semantic meaning into high-dimensional vectors, and practical applications: semantic search, RAG (retrieval-augmented generation), recommendation systems, and anomaly detection. Includes Python examples and discusses cosine similarity. Essential reading for building AI-powered search systems.",
-    tags: ["embeddings", "vector-search", "semantic-search", "rag", "tutorial"],
-    category: "AI & Machine Learning",
+    url: "https://www.instagram.com/p/demo-invest-in-yourself/",
+    platform: "instagram",
+    title: "The Best Investment Is in Yourself",
+    description: "Skills, knowledge, health, relationships — compound interest applies to all of them.",
+    summary: "A motivational post drawing the parallel between financial compound interest and personal development. The author argues that consistent investment in skills, health, and relationships yields exponential returns over time — making self-investment the highest-ROI decision anyone can make.",
+    tags: ["mindset", "motivation", "personal-growth", "career", "self-improvement"],
+    categoryName: "Career",
   },
 
-  // --- Web Development ---
+  // ── LinkedIn ───────────────────────────────────────────────────────────────
   {
-    url: "https://react.dev/blog/2023/03/22/react-labs-what-we-have-been-working-on-march-2023",
-    title: "React Labs: What We Have Been Working On – March 2023",
-    description: "React team update on Server Components, React Forget (compiler), and Offscreen.",
-    summary: "The React team shares progress on React Server Components now production-ready in Next.js 13, the React Forget compiler that automatically memoizes components to eliminate unnecessary re-renders, and the Offscreen API for pre-rendering content in the background. Marks a major shift in how React applications will be structured going forward.",
-    tags: ["react", "server-components", "web-dev", "javascript", "frontend"],
-    category: "Web Development",
+    url: "https://www.linkedin.com/posts/demo-ai-product-management/",
+    platform: "linkedin",
+    title: "How AI is Reshaping Product Management in 2026",
+    description: "PMs who understand AI aren't just using AI tools — they're rethinking what a product roadmap even means.",
+    summary: "A product management leader argues that AI isn't just another feature category — it fundamentally changes how product roadmaps are built. Instead of shipping fixed feature sets, AI-native products ship learning surfaces where the model improves with usage. The post outlines three new PM competencies: prompt architecture, model evaluation, and feedback loop design.",
+    tags: ["ai", "product-management", "saas", "future-of-work", "product-strategy"],
+    categoryName: "Tech",
   },
   {
-    url: "https://web.dev/articles/vitals",
-    title: "Core Web Vitals",
-    description: "Google's user-centric metrics for measuring real-world web performance.",
-    summary: "Core Web Vitals are a set of specific factors that Google considers important for overall user experience: Largest Contentful Paint (loading), First Input Delay (interactivity), and Cumulative Layout Shift (visual stability). These metrics directly affect Google search rankings. The article covers measurement tools, optimization strategies, and common failure patterns.",
-    tags: ["performance", "web-vitals", "google", "seo", "frontend"],
-    category: "Web Development",
+    url: "https://www.linkedin.com/posts/demo-junior-to-senior/",
+    platform: "linkedin",
+    title: "From Junior to Senior Dev in 3 Years: What Actually Worked",
+    description: "Spoiler: it wasn't grinding leetcode. It was obsessing over code reviews and reading source code.",
+    summary: "A software engineer shares the three practices that accelerated their growth from junior to senior: deep engagement with code review (both giving and receiving), reading open-source codebases to internalize architecture patterns, and deliberately taking on adjacent tasks outside their comfort zone. Refreshingly honest about what did not help (algorithm competitions, tutorial hell).",
+    tags: ["career-growth", "software-engineering", "mentorship", "developer", "learning"],
+    categoryName: "Career",
   },
   {
-    url: "https://nextjs.org/blog/next-15",
-    title: "Next.js 15",
-    description: "Next.js 15 release notes with React 19 support and improved caching.",
-    summary: "Next.js 15 ships with React 19 support, opt-in request memoization, improved caching defaults (GET route handlers no longer cached by default), the new @next/codemod CLI for automated upgrades, and turbopack stability improvements. Breaking changes in fetch behavior require attention when upgrading from v14.",
-    tags: ["nextjs", "react", "web-dev", "typescript", "vercel"],
-    category: "Web Development",
+    url: "https://www.linkedin.com/posts/demo-turkish-startups-vc/",
+    platform: "linkedin",
+    title: "Why Turkish Startups Are Attracting Global VC Attention",
+    description: "Strong engineering culture, lower burn rates, and a population that's 50% under 32. The fundamentals are compelling.",
+    summary: "An analysis of why Istanbul has emerged as a significant startup hub attracting international venture capital. Key factors: a large, young, tech-literate population, world-class engineering universities, significantly lower operational costs than Western Europe, and a growing diaspora network connecting Turkish founders to Silicon Valley and London. Includes data on recent funding rounds in fintech, logistics, and AI.",
+    tags: ["startups", "turkey", "venture-capital", "ecosystem", "emerging-markets"],
+    categoryName: "Tech",
   },
   {
-    url: "https://developer.mozilla.org/en-US/docs/Web/API/Web_Components",
-    title: "Web Components | MDN",
-    description: "MDN guide to Web Components: Custom Elements, Shadow DOM, and HTML Templates.",
-    summary: "Web Components is a suite of technologies for creating reusable, encapsulated custom HTML elements. Covers Custom Elements API for defining new HTML tags, Shadow DOM for encapsulated styling, and HTML Templates for reusable markup patterns. Framework-agnostic and natively supported in all modern browsers.",
-    tags: ["web-components", "custom-elements", "shadow-dom", "mdn", "html"],
-    category: "Web Development",
-  },
-
-  // --- Design & UX ---
-  {
-    url: "https://www.nngroup.com/articles/ten-usability-heuristics/",
-    title: "10 Usability Heuristics for User Interface Design",
-    description: "Jakob Nielsen's classic usability principles, still essential after 30 years.",
-    summary: "Jakob Nielsen's ten general principles for interaction design: visibility of system status, match with real world, user control and freedom, consistency and standards, error prevention, recognition over recall, flexibility and efficiency, aesthetic and minimalist design, help users recover from errors, and documentation. The most cited framework in UX design education.",
-    tags: ["ux", "usability", "design", "nielsen", "heuristics"],
-    category: "Design & UX",
-  },
-  {
-    url: "https://www.figma.com/blog/design-tokens-101/",
-    title: "Design Tokens 101",
-    description: "Figma's guide to design tokens — the building blocks of design systems.",
-    summary: "Design tokens are the smallest, indivisible elements of a design system: color values, spacing, typography, and shadows stored as named variables. This guide explains token taxonomy (global → semantic → component), how tokens sync between Figma and code using tools like Style Dictionary, and why tokens are essential for maintaining consistency across platforms and themes.",
-    tags: ["design-tokens", "design-system", "figma", "css", "theming"],
-    category: "Design & UX",
-  },
-  {
-    url: "https://lawsofux.com/",
-    title: "Laws of UX",
-    description: "Collection of the psychology principles that designers should know.",
-    summary: "Laws of UX by Jon Yablonski catalogs psychology principles relevant to interface design: Hick's Law (decision time increases with choices), Fitts's Law (time to reach a target depends on distance and size), Miller's Law (7 ± 2 items in working memory), the Peak-End Rule, Jakob's Law (users expect sites to work like others they know), and more. Each law includes examples, implications for design, and the originating research.",
-    tags: ["ux", "psychology", "design", "cognitive", "principles"],
-    category: "Design & UX",
+    url: "https://www.linkedin.com/posts/demo-remote-work-experiment/",
+    platform: "linkedin",
+    title: "The 5-Hour Remote Work Experiment: Results After 6 Months",
+    description: "What if deep work matters more than hours online? My team tried it. Here's what happened.",
+    summary: "A engineering manager documents their team's six-month experiment with a 5-hour focused-work day, cutting meetings to a minimum and asynchronizing all status updates. Results: output quality improved, team well-being scores increased, and hiring became easier. The post honestly addresses the challenges: client expectations, collaboration timezone issues, and the adjustment period.",
+    tags: ["remote-work", "productivity", "async", "work-life-balance", "management"],
+    categoryName: "Career",
   },
 
-  // --- Productivity & Tools ---
+  // ── X / Twitter ────────────────────────────────────────────────────────────
   {
-    url: "https://obsidian.md/",
-    title: "Obsidian — A second brain, for you, forever",
-    description: "Markdown-based personal knowledge management app with local-first storage.",
-    summary: "Obsidian is a personal knowledge base and note-taking app that stores everything as local Markdown files. It features bidirectional linking, a graph view of note connections, and a rich plugin ecosystem. The local-first approach means your notes are always accessible offline and you own your data completely. Popular among researchers, writers, and developers building a 'second brain'.",
-    tags: ["pkm", "notes", "markdown", "productivity", "knowledge-management"],
-    category: "Productivity & Tools",
+    url: "https://x.com/demo_user/status/1001-typescript-tricks",
+    platform: "x",
+    title: "Thread: 10 TypeScript tricks I wish I knew earlier",
+    description: "🧵 A thread on TypeScript patterns that made me a better developer. Saved me hours of debugging.",
+    summary: "A developer thread sharing 10 advanced TypeScript patterns: discriminated unions for exhaustive type checking, const assertions to narrow literal types, template literal types for type-safe string manipulation, infer keyword in conditional types, and more. Each tip includes a minimal code example and explains the real-world problem it solves.",
+    tags: ["typescript", "javascript", "dev-tips", "web-dev", "programming"],
+    categoryName: "Programming",
   },
   {
-    url: "https://github.com/features/copilot",
-    title: "GitHub Copilot",
-    description: "AI pair programming tool powered by OpenAI Codex.",
-    summary: "GitHub Copilot is an AI-powered code completion tool that suggests whole lines and functions in real time based on context and natural language comments. Trained on billions of lines of public code, it supports most popular programming languages and integrates with VS Code, JetBrains IDEs, and Neovim. The Business and Enterprise tiers add code referencing, policy controls, and security vulnerability filtering.",
-    tags: ["github", "ai", "coding", "productivity", "copilot"],
-    category: "Productivity & Tools",
+    url: "https://x.com/demo_user/status/1002-building-in-public",
+    platform: "x",
+    title: "Building in public: Month 3 of SavedPocket",
+    description: "Month 3 update: 127 signups, first paying customer, and the feature that nobody asked for but everyone loves.",
+    summary: "A founder's month-three building-in-public update for a personal knowledge management SaaS. Metrics shared: 127 total signups, first paying customer, 18% week-over-week growth. The post discusses which features drove unexpected engagement and the mental challenge of balancing development time with marketing as a solo founder.",
+    tags: ["buildinpublic", "saas", "indie-hacker", "startup", "founder"],
+    categoryName: "Tech",
   },
   {
-    url: "https://raycast.com/",
-    title: "Raycast — Your shortcut to everything",
-    description: "Blazing fast macOS launcher with AI integration and extension ecosystem.",
-    summary: "Raycast replaces Spotlight as a macOS launcher with far more capability: clipboard history, window management, snippet expansion, calendar integration, GitHub actions, and a rich extension marketplace. The AI tier adds Claude and ChatGPT integration directly in the command bar. Highly popular among developers for its scripting API and the ability to publish extensions in React.",
-    tags: ["macos", "productivity", "launcher", "developer-tools", "ai"],
-    category: "Productivity & Tools",
-  },
-
-  // --- Security & Privacy ---
-  {
-    url: "https://owasp.org/www-project-top-ten/",
-    title: "OWASP Top Ten Web Application Security Risks",
-    description: "The most critical web security vulnerabilities, updated for 2021.",
-    summary: "OWASP Top Ten 2021 covers the most critical web application security risks: Broken Access Control (ranked #1), Cryptographic Failures, Injection, Insecure Design, Security Misconfiguration, Vulnerable Components, Authentication Failures, Software and Data Integrity Failures, Logging Failures, and Server-Side Request Forgery. Each risk includes description, example attacks, prevention guidance, and CWE mappings.",
-    tags: ["security", "owasp", "web-security", "vulnerability", "best-practices"],
-    category: "Security & Privacy",
+    url: "https://x.com/demo_user/status/1003-ship-earlier",
+    platform: "x",
+    title: "The best time to ship is always earlier than you think",
+    description: "Your users will tell you what to fix. Your imagination will tell you what to add. Only one of these is right.",
+    summary: "A pithy but insightful observation about the asymmetry between pre-launch feature imagination and post-launch user feedback. The author argues that shipping early gives you real signal to iterate on, while extended pre-launch development optimizes for imagined needs rather than actual ones. Includes a reply thread discussing the limits of the advice (safety-critical software, regulated industries).",
+    tags: ["product", "shipping", "startup-mindset", "indie-hacker", "iteration"],
+    categoryName: "Tech",
   },
   {
-    url: "https://haveibeenpwned.com/",
-    title: "Have I Been Pwned",
-    description: "Check if your email or phone has been compromised in a data breach.",
-    summary: "Troy Hunt's Have I Been Pwned aggregates data from hundreds of public data breaches — 12+ billion accounts — and lets anyone check whether their email or phone number appeared in leaked datasets. Also offers a Pwned Passwords API to check if a password has appeared in known breaches (used by 1Password, Firefox Monitor, and others). Free to query; API available for integration.",
-    tags: ["security", "privacy", "data-breach", "passwords", "tool"],
-    category: "Security & Privacy",
+    url: "https://x.com/demo_user/status/1004-rag-vs-finetuning",
+    platform: "x",
+    title: "RAG vs Fine-tuning: a practical breakdown",
+    description: "People keep asking me which one to use. Here's my decision framework after building both.",
+    summary: "A practical breakdown of when to use Retrieval-Augmented Generation versus fine-tuning for LLM applications. RAG wins for dynamic knowledge bases, cited factual answers, and lower cost; fine-tuning wins for style/tone consistency, domain-specific jargon, and latency-sensitive applications. Includes a decision tree and cost comparison based on real deployments.",
+    tags: ["rag", "fine-tuning", "llm", "ai", "machine-learning"],
+    categoryName: "Tech",
   },
 
-  // --- Business & Startups ---
+  // ── YouTube ────────────────────────────────────────────────────────────────
   {
-    url: "https://paulgraham.com/startupideas.html",
-    title: "How to Get Startup Ideas",
-    description: "Paul Graham's essay on finding good startup ideas by noticing real problems.",
-    summary: "Paul Graham argues the best startup ideas come from noticing problems you personally experience, especially problems that seem too niche or unsexy for large companies to address. Key principles: be a user of your own product, look for fast-changing spaces, choose problems where the market will be large in ten years even if it's small today, and notice problems others dismiss as 'too small'. The essay distinguishes between 'made up' ideas (working backward from what seems cool) versus 'found' ideas (working forward from real problems).",
-    tags: ["startups", "entrepreneurship", "paul-graham", "product", "ideas"],
-    category: "Business & Startups",
+    url: "https://www.youtube.com/watch?v=demo-nextjs-postgresql",
+    platform: "youtube",
+    title: "Build a Full-Stack App with Next.js 15 & PostgreSQL",
+    description: "Complete tutorial: Next.js App Router, Drizzle ORM, PostgreSQL, authentication, deployment. 4 hours.",
+    summary: "A comprehensive 4-hour tutorial building a full-stack SaaS application from scratch using Next.js 15 App Router, Drizzle ORM, and PostgreSQL. Covers project setup, database schema design, server actions, authentication with better-auth, image uploads, and deployment to a VPS with Docker. Well-paced with clear explanations of the architectural decisions made throughout.",
+    tags: ["nextjs", "postgresql", "typescript", "tutorial", "drizzle", "fullstack"],
+    categoryName: "Programming",
   },
   {
-    url: "https://stripe.com/blog/payment-api-design",
-    title: "Designing APIs for humans: Object not IDs",
-    description: "Stripe on why returning full objects instead of IDs makes APIs dramatically better.",
-    summary: "Stripe's engineering blog explains their philosophy of returning full nested objects rather than foreign key IDs in API responses. Instead of returning customer_id in a charge, they return the expanded customer object. This approach eliminates a class of N+1 request patterns, makes API responses self-documenting, and dramatically reduces the number of API calls needed to build a feature. The post covers the tradeoffs around response size and caching.",
-    tags: ["api-design", "stripe", "developer-experience", "rest", "engineering"],
-    category: "Business & Startups",
+    url: "https://www.youtube.com/watch?v=demo-system-design-twitter",
+    platform: "youtube",
+    title: "System Design Interview: Design Twitter",
+    description: "How would you design Twitter's core features? Feed, tweets, follows, search — all covered.",
+    summary: "A detailed system design walkthrough for Twitter's core architecture. Covers the fan-out problem for the home timeline (push vs pull models), tweet storage with sharding strategies, the search infrastructure using inverted indexes, and real-time notification delivery. Includes capacity estimation and discusses trade-offs made by the actual Twitter/X engineering team.",
+    tags: ["system-design", "interview", "scalability", "backend", "distributed-systems"],
+    categoryName: "Tech",
+  },
+  {
+    url: "https://www.youtube.com/watch?v=demo-atomic-habits",
+    platform: "youtube",
+    title: "Atomic Habits — Complete Book Summary",
+    description: "James Clear's habit framework in 30 minutes. The 1% better every day philosophy explained.",
+    summary: "A concise summary of James Clear's Atomic Habits, covering the four laws of behavior change: make it obvious, make it attractive, make it easy, and make it satisfying. Explains habit stacking, the role of identity in habit formation, and the plateau of latent potential. A useful refresher for anyone who has read the book or a solid overview for those who haven't.",
+    tags: ["habits", "productivity", "book-summary", "self-improvement", "james-clear"],
+    categoryName: "Career",
+  },
+  {
+    url: "https://www.youtube.com/watch?v=demo-postgresql-performance",
+    platform: "youtube",
+    title: "PostgreSQL Performance Tuning in 30 Minutes",
+    description: "EXPLAIN ANALYZE, index types, query planning — the essentials for developers who aren't DBAs.",
+    summary: "A developer-focused guide to PostgreSQL performance tuning that doesn't require a DBA background. Covers reading EXPLAIN ANALYZE output, choosing between B-tree, GIN, and BRIN indexes, common N+1 patterns and how to fix them with CTEs or lateral joins, and connection pooling with PgBouncer. Practical and immediately applicable to production applications.",
+    tags: ["postgresql", "performance", "database", "sql", "backend"],
+    categoryName: "Programming",
   },
 
-  // --- Data & Databases ---
+  // ── Web ────────────────────────────────────────────────────────────────────
   {
-    url: "https://www.postgresql.org/docs/current/textsearch.html",
-    title: "PostgreSQL Full Text Search",
-    description: "PostgreSQL's built-in full-text search with tsvector and tsquery.",
-    summary: "PostgreSQL full-text search converts documents into tsvector (lexeme arrays) and queries into tsquery (lexeme patterns), then matches them using GIN or GiST indexes. Supports English and other language dictionaries, stop words, stemming, ranking with ts_rank, phrase search with <->, and headline generation. Enables fast text search without requiring an external search engine like Elasticsearch.",
-    tags: ["postgresql", "full-text-search", "database", "search", "sql"],
-    category: "Data & Databases",
+    url: "https://posthog.com/blog/saas-pricing-playbook",
+    platform: "web",
+    title: "The SaaS Pricing Playbook",
+    description: "Usage-based, seat-based, freemium — a framework for choosing the pricing model that fits your product.",
+    summary: "PostHog's engineering team shares their framework for SaaS pricing model selection. Compares per-seat, usage-based, flat-rate, and freemium models with real revenue data on conversion rates and churn. The key insight: pricing model should match how customers derive value, not how you measure internal costs. Includes a decision matrix and case studies from PostHog's own pricing evolution.",
+    tags: ["saas", "pricing", "product", "business", "revenue"],
+    categoryName: "Tech",
   },
   {
-    url: "https://www.pgvector.org/",
-    title: "pgvector: Open-source vector similarity search for Postgres",
-    description: "Store and query vector embeddings directly in PostgreSQL.",
-    summary: "pgvector is a PostgreSQL extension that adds vector data types and similarity search operators. Supports exact and approximate nearest neighbor search using IVFFLAT and HNSW indexes. Enables semantic search and RAG (retrieval-augmented generation) directly in Postgres without a separate vector database like Pinecone or Weaviate. The HNSW index trades index build time for better query performance.",
-    tags: ["pgvector", "postgresql", "vector-search", "embeddings", "database"],
-    category: "Data & Databases",
+    url: "https://dev.to/demo/drizzle-vs-prisma",
+    platform: "web",
+    title: "Drizzle ORM vs Prisma: A Practical Comparison",
+    description: "Migrated a production app from Prisma to Drizzle. Here's everything I learned.",
+    summary: "A developer documents their migration from Prisma to Drizzle ORM on a production Next.js application. Drizzle wins on raw query performance (no hidden N+1), TypeScript inference, bundle size, and flexibility for complex queries. Prisma wins on schema migration DX, the Prisma Studio GUI, and documentation maturity. Honest about the migration pain points and where Drizzle's SQL-first approach requires more upfront thinking.",
+    tags: ["drizzle", "prisma", "typescript", "orm", "postgresql"],
+    categoryName: "Programming",
   },
+  {
+    url: "https://www.indiehackers.com/post/how-i-got-first-100-customers",
+    platform: "web",
+    title: "How I Got My First 100 Customers Without Ads",
+    description: "Community-led growth: where my first 100 customers actually came from, with honest numbers.",
+    summary: "An indie hacker breaks down their first 100 customers by acquisition channel: 43 from a Product Hunt launch, 28 from a Hacker News Show HN post, 19 from direct outreach to Twitter/X followers, and 10 from a niche Slack community. Advertising produced zero. The takeaway: early customers come from personal trust and community participation, not paid acquisition.",
+    tags: ["saas", "growth", "marketing", "indie-hacker", "customer-acquisition"],
+    categoryName: "Tech",
+  },
+  {
+    url: "https://linear.app/blog/design-principles",
+    platform: "web",
+    title: "The Design Principles Behind Linear",
+    description: "How Linear thinks about speed, focus, and taste in product design — and why most tools fail on all three.",
+    summary: "Linear's design team articulates the principles that guide every product decision: speed as a feature (every interaction under 100ms), focus over flexibility (removing options that add complexity without proportional value), and taste as a competitive moat (caring deeply about details that users feel even when they can't articulate them). An unusually honest and specific design philosophy document from a company known for its craft.",
+    tags: ["design", "product-design", "ui", "linear", "principles"],
+    categoryName: "Design",
+  },
+];
 
-  // --- Open Standards ---
-  {
-    url: "https://modelcontextprotocol.io/",
-    title: "Model Context Protocol",
-    description: "Anthropic's open standard for connecting AI models to data sources and tools.",
-    summary: "MCP (Model Context Protocol) is an open standard that enables AI assistants to connect to data sources, tools, and services in a consistent way. It defines a client-server architecture where AI applications (clients) connect to MCP servers that expose resources, tools, and prompts. MCP servers exist for databases, file systems, GitHub, Slack, and hundreds of other services. Designed to be transport-agnostic: works over stdio, HTTP, and WebSockets.",
-    tags: ["mcp", "anthropic", "ai", "open-standard", "integration"],
-    category: "AI & Machine Learning",
-  },
-  {
-    url: "https://webmachinelearning.github.io/webmcp/",
-    title: "WebMCP Specification",
-    description: "W3C Community Group draft for browser-native AI tool registration via document.modelContext.",
-    summary: "WebMCP is a W3C Community Group draft specification that enables web pages to register structured tools accessible to AI agents browsing those pages. The API uses document.modelContext.registerTool() to expose named functions with JSON Schema input validation and natural language descriptions. Agents inherit the user's browser session — no separate auth needed for same-origin fetches. Tools run in the page's JS context, enabling tight integration with any web app.",
-    tags: ["webmcp", "w3c", "browser-api", "ai-agents", "open-standard"],
-    category: "AI & Machine Learning",
-  },
-  {
-    url: "https://openai.com/webmcp-challenge/",
-    title: "WebMCP Challenge — OpenAI",
-    description: "10-day hackathon to build apps using the WebMCP browser API. $35K prize pool.",
-    summary: "OpenAI's WebMCP Challenge runs August 25 – September 3, 2026. Top 10 submissions each receive $3,000 cash, ChatGPT Pro, a Codex Micro keyboard, and credits from Cloudflare, Vercel, Render, and Netlify. Judged on WebMCP leverage, execution quality, potential impact, and creativity. Requires a live URL (testable in ChatGPT browser mode), a demo video under 3 minutes, and a public open-source repository.",
-    tags: ["webmcp", "hackathon", "openai", "challenge", "competition"],
-    category: "AI & Machine Learning",
-  },
-] as const;
+// ── Demo collections ──────────────────────────────────────────────────────────
 
 const DEMO_COLLECTIONS = [
   {
-    name: "AI Reading List",
-    description: "Papers, blog posts, and guides about AI and machine learning",
-    slug: "demo-ai-reading-list",
+    name: "Geliştirici Araçları",
+    description: "Programming tutorials, tools, and technical deep dives worth revisiting",
+    slug: "demo-developer-tools",
     itemUrls: [
-      "https://arxiv.org/abs/2307.09288",
-      "https://www.anthropic.com/research/claude-character",
-      "https://karpathy.github.io/2015/05/21/rnn-effectiveness/",
-      "https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf",
-      "https://simonwillison.net/2023/Oct/23/embeddings/",
-      "https://modelcontextprotocol.io/",
-      "https://webmachinelearning.github.io/webmcp/",
+      "https://www.youtube.com/watch?v=demo-nextjs-postgresql",
+      "https://www.youtube.com/watch?v=demo-system-design-twitter",
+      "https://dev.to/demo/drizzle-vs-prisma",
+      "https://linear.app/blog/design-principles",
+      "https://www.instagram.com/p/demo-morning-routine/",
     ],
   },
   {
-    name: "Web Dev Essentials",
-    description: "Frontend development, frameworks, and web platform resources",
-    slug: "demo-web-dev",
+    name: "Kariyer & Büyüme",
+    description: "Career advice, productivity, and personal development saved for later",
+    slug: "demo-career-growth",
     itemUrls: [
-      "https://react.dev/blog/2023/03/22/react-labs-what-we-have-been-working-on-march-2023",
-      "https://web.dev/articles/vitals",
-      "https://nextjs.org/blog/next-15",
-      "https://developer.mozilla.org/en-US/docs/Web/API/Web_Components",
-    ],
-  },
-  {
-    name: "Tools & Productivity",
-    description: "Apps, tools, and workflows that improve how I work",
-    slug: "demo-productivity",
-    itemUrls: [
-      "https://obsidian.md/",
-      "https://github.com/features/copilot",
-      "https://raycast.com/",
+      "https://www.linkedin.com/posts/demo-junior-to-senior/",
+      "https://www.linkedin.com/posts/demo-remote-work-experiment/",
+      "https://posthog.com/blog/saas-pricing-playbook",
+      "https://www.instagram.com/p/demo-invest-in-yourself/",
+      "https://www.youtube.com/watch?v=demo-atomic-habits",
     ],
   },
 ] as const;
 
-async function seed() {
-  console.log("Seeding demo data...");
+// ── Main ──────────────────────────────────────────────────────────────────────
 
-  // Upsert demo user
-  const existingUser = await db.query.user.findFirst({
+async function seed() {
+  console.log("Starting demo seed…");
+
+  // Build category name → id map
+  const allCategories = await db.select().from(categories);
+  const catMap = new Map(allCategories.map((c) => [c.name, c.id]));
+
+  // ── Upsert demo user ──────────────────────────────────────────────────────
+  const existing = await db.query.user.findFirst({
     where: eq(user.email, DEMO_EMAIL),
   });
 
   let userId: string;
-  if (existingUser) {
-    userId = existingUser.id;
-    console.log(`Using existing demo user: ${userId}`);
-    // Ensure API key matches
-    await db.update(user).set({ apiKey: DEMO_API_KEY }).where(eq(user.id, userId));
+
+  if (existing) {
+    userId = existing.id;
+    await db
+      .update(user)
+      .set({ apiKey: DEMO_API_KEY, emailVerified: true })
+      .where(eq(user.id, userId));
+    console.log(`Using existing user: ${userId}`);
+
+    if (RESET) {
+      await db.delete(items).where(eq(items.userId, userId));
+      await db.delete(collections).where(eq(collections.userId, userId));
+      console.log("Reset: deleted all items and collections.");
+    }
   } else {
     userId = crypto.randomUUID();
     await db.insert(user).values({
@@ -288,49 +318,81 @@ async function seed() {
       emailVerified: true,
       apiKey: DEMO_API_KEY,
     });
-    console.log(`Created demo user: ${userId}`);
+    console.log(`Created user: ${userId}`);
   }
 
-  // Insert items (skip duplicates by url)
+  // ── Upsert account row (so password login works) ──────────────────────────
+  const existingAccount = await db.query.account.findFirst({
+    where: and(eq(account.userId, userId), eq(account.providerId, "credential")),
+  });
+
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
+
+  if (existingAccount) {
+    await db
+      .update(account)
+      .set({ password: passwordHash })
+      .where(eq(account.id, existingAccount.id));
+  } else {
+    await db.insert(account).values({
+      id: crypto.randomUUID(),
+      accountId: DEMO_EMAIL,
+      providerId: "credential",
+      userId,
+      password: passwordHash,
+    });
+  }
+  console.log("Password account ready.");
+
+  // ── Insert items ──────────────────────────────────────────────────────────
   const now = new Date();
-  const insertedIds = new Map<string, string>(); // url → item id
+  const insertedIds = new Map<string, string>(); // url → itemId
 
   for (let i = 0; i < DEMO_ITEMS.length; i++) {
     const item = DEMO_ITEMS[i];
+
     const existing = await db.query.items.findFirst({
-      where: (t, { and, eq: eq2 }) => and(eq2(t.userId, userId), eq2(t.url, item.url)),
+      where: and(eq(items.userId, userId), eq(items.url, item.url)),
     });
-    if (existing) {
+
+    if (existing && !RESET) {
       insertedIds.set(item.url, existing.id);
+      process.stdout.write("·");
       continue;
     }
-    const id = crypto.randomUUID();
-    const savedAt = new Date(now.getTime() - i * 3_600_000); // stagger by 1h each
+
+    const id = RESET && existing ? existing.id : crypto.randomUUID();
+    const savedAt = new Date(now.getTime() - i * 7_200_000); // 2h apart
+
     await db.insert(items).values({
       id,
       userId,
       url: item.url,
+      platform: item.platform,
       title: item.title,
       description: item.description,
       summary: item.summary,
-      tags: item.tags as unknown as string[],
+      tags: item.tags,
+      categoryId: catMap.get(item.categoryName) ?? null,
       analysisStatus: "done",
-      platform: "web",
       savedAt,
-    });
+    }).onConflictDoNothing();
+
     insertedIds.set(item.url, id);
     process.stdout.write(".");
   }
-  console.log(`\nInserted ${insertedIds.size} items`);
+  console.log(`\n${insertedIds.size} items ready.`);
 
-  // Insert collections
+  // ── Insert collections ────────────────────────────────────────────────────
   for (const col of DEMO_COLLECTIONS) {
     let collectionId: number;
-    const existingCol = await db.query.collections.findFirst({
-      where: (t, { eq: eq2 }) => eq2(t.slug, col.slug),
+
+    const existing = await db.query.collections.findFirst({
+      where: eq(collections.slug, col.slug),
     });
-    if (existingCol) {
-      collectionId = existingCol.id;
+
+    if (existing) {
+      collectionId = existing.id;
     } else {
       const [inserted] = await db
         .insert(collections)
@@ -340,6 +402,7 @@ async function seed() {
           description: col.description,
           slug: col.slug,
           visibility: "public",
+          forkable: true,
         })
         .returning({ id: collections.id });
       collectionId = inserted.id;
@@ -347,7 +410,10 @@ async function seed() {
 
     for (const url of col.itemUrls) {
       const itemId = insertedIds.get(url);
-      if (!itemId) continue;
+      if (!itemId) {
+        console.warn(`  ⚠ item not found for url: ${url}`);
+        continue;
+      }
       await db
         .insert(collectionItems)
         .values({ collectionId, itemId })
@@ -357,12 +423,14 @@ async function seed() {
   }
 
   console.log(`
-Done! Demo credentials:
-  Email:   ${DEMO_EMAIL}
+Done!
+
+  Login:   ${DEMO_EMAIL}
+  Pass:    ${DEMO_PASSWORD}
   API key: ${DEMO_API_KEY}
 
-WebMCP gateway URL:
-  /webmcp?key=${DEMO_API_KEY}
+To generate AI images for all demo items (optional):
+  OPENAI_API_KEY=sk-... DATABASE_URL=<url> npx tsx scripts/generate-demo-images.ts
 `);
 }
 
