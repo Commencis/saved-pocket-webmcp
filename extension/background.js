@@ -12,29 +12,51 @@ async function getConfig() {
   };
 }
 
-// Resolves API key: uses stored key, or falls back to cookie-based /api/me
-// (cookie fallback works reliably when server is localhost in the same browser).
+// Session-first key resolution: active browser session wins over stored key.
+// Result is cached for 30 s to avoid a /api/me request on every save.
+let _sessionKey = null;
+let _sessionTs = 0;
+const SESSION_TTL = 30_000;
+
 async function resolveApiKey(serverUrl) {
+  // 1. Return cached session key if still fresh
+  const now = Date.now();
+  if (_sessionKey && now - _sessionTs < SESSION_TTL) return _sessionKey;
+
+  // 2. Try active browser session (cookie-based)
+  try {
+    const res = await fetch(`${serverUrl}/api/me`, { credentials: "include" });
+    if (res.ok) {
+      const me = await res.json();
+      if (me?.apiKey) {
+        _sessionKey = me.apiKey;
+        _sessionTs = now;
+        // Keep storage in sync so the popup shows the right account
+        const { apiKey: stored } = await chrome.storage.local.get("apiKey");
+        if (me.apiKey !== stored) {
+          await chrome.storage.local.set({ apiKey: me.apiKey });
+        }
+        return me.apiKey;
+      }
+    }
+  } catch {}
+
+  // 3. No active session — fall back to manually stored key
+  _sessionKey = null;
   const { apiKey } = await chrome.storage.local.get("apiKey");
   if (apiKey) return apiKey;
 
-  const res = await fetch(`${serverUrl}/api/me`, { credentials: "include" });
-  if (!res.ok) {
-    throw new Error(
-      `Not logged in to SavedPocket. Open ${serverUrl}, sign in, ` +
-      `then copy your API key from Settings into the extension popup.`
-    );
-  }
-  const me = await res.json();
-  if (me.apiKey) await chrome.storage.local.set({ apiKey: me.apiKey });
-  return me.apiKey;
+  throw new Error(
+    `Not logged in to SavedPocket. Open ${serverUrl}, sign in, ` +
+    `or copy your API key from Settings into the extension popup.`
+  );
 }
 
 // ── Send helpers ──────────────────────────────────────────────────────────────
 
 async function send(platform, items, { retried = false } = {}) {
-  const { serverUrl, apiKey: stored } = await getConfig();
-  const apiKey = stored || await resolveApiKey(serverUrl);
+  const { serverUrl } = await getConfig();
+  const apiKey = await resolveApiKey(serverUrl);
 
   const res = await fetch(`${serverUrl}/api/ingest/extension`, {
     method: "POST",
@@ -43,7 +65,8 @@ async function send(platform, items, { retried = false } = {}) {
   });
 
   if (res.status === 401 && !retried) {
-    // Key may be stale — clear and retry once
+    // Key may be stale — clear cache and stored key, retry once
+    _sessionKey = null; _sessionTs = 0;
     await chrome.storage.local.remove("apiKey");
     return send(platform, items, { retried: true });
   }
@@ -51,8 +74,8 @@ async function send(platform, items, { retried = false } = {}) {
 }
 
 async function sendUrl(url, { title = null, note = null, mcpContent = null, retried = false } = {}) {
-  const { serverUrl, apiKey: stored } = await getConfig();
-  const apiKey = stored || await resolveApiKey(serverUrl);
+  const { serverUrl } = await getConfig();
+  const apiKey = await resolveApiKey(serverUrl);
 
   const res = await fetch(`${serverUrl}/api/ingest/extension`, {
     method: "POST",
@@ -61,6 +84,7 @@ async function sendUrl(url, { title = null, note = null, mcpContent = null, retr
   });
 
   if (res.status === 401 && !retried) {
+    _sessionKey = null; _sessionTs = 0;
     await chrome.storage.local.remove("apiKey");
     return sendUrl(url, { title, note, mcpContent, retried: true });
   }
@@ -116,7 +140,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "SAVEDPOCKET_GET_ITEM") {
     (async () => {
       try {
-        const { serverUrl, apiKey } = await getConfig();
+        const { serverUrl } = await getConfig();
+        const apiKey = await resolveApiKey(serverUrl).catch(() => null);
         if (!apiKey) { sendResponse({ error: true }); return; }
         const res = await fetch(`${serverUrl}/api/items/${message.id}`, {
           headers: { "x-savedpocket-key": apiKey },
@@ -134,7 +159,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "SAVEDPOCKET_PATCH_ITEM") {
     (async () => {
       try {
-        const { serverUrl, apiKey } = await getConfig();
+        const { serverUrl } = await getConfig();
+        const apiKey = await resolveApiKey(serverUrl).catch(() => null);
         if (!apiKey) { sendResponse({ error: true }); return; }
         const res = await fetch(`${serverUrl}/api/items/${message.id}`, {
           method: "PATCH",
@@ -248,9 +274,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((err) => console.warn("[SavedPocket] send failed, will retry on next scroll:", err));
   }
 
-  // Popup notifies that config was updated (service worker may have cached old values)
-  // Nothing to do — next getConfig() call will read fresh values from storage.
+  // Popup notifies that config was updated — clear session cache so next key
+  // resolution re-evaluates rather than returning a stale cached value.
   if (message?.type === "SAVEDPOCKET_CONFIG_UPDATE") {
+    _sessionKey = null; _sessionTs = 0;
     console.log("[SavedPocket] config updated");
   }
 });
