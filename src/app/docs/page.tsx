@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpen, Home } from "lucide-react";
+import { DocsToc } from "./DocsToc";
 
 export const metadata: Metadata = {
   title: "Docs — SavedPocket",
@@ -121,6 +122,9 @@ const toc = [
   { id: "local-dev", label: "Local Development" },
   { id: "env-vars", label: "Environment Variables" },
   { id: "extension", label: "Chrome Extension" },
+  { id: "ext-install", label: "↳ Installation" },
+  { id: "ext-popup", label: "↳ Extension Popup" },
+  { id: "ext-server-url", label: "↳ Server URL" },
   { id: "whatsapp-import", label: "WhatsApp Import" },
   { id: "collections", label: "Collections" },
   { id: "export", label: "Export for LLM / NotebookLM" },
@@ -154,21 +158,8 @@ export default function DocsPage() {
 
       <div className="mx-auto flex max-w-7xl gap-10 px-6 py-10">
         {/* Sidebar TOC */}
-        <aside className="sticky top-[60px] hidden h-[calc(100vh-80px)] w-52 shrink-0 overflow-y-auto lg:block">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
-            On this page
-          </p>
-          <nav className="flex flex-col gap-0.5">
-            {toc.map((item) => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                className="rounded-md px-2 py-1 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
+        <aside className="sticky top-[60px] hidden h-[calc(100vh-80px)] w-56 shrink-0 overflow-y-auto lg:block">
+          <DocsToc items={toc} />
         </aside>
 
         {/* Main content */}
@@ -178,7 +169,7 @@ export default function DocsPage() {
           <H2 id="overview">Overview</H2>
           <P>
             <strong>SavedPocket</strong> is a self-hosted "read-it-later brain" for everything you save across the internet.
-            It collects your saved posts from Instagram, LinkedIn, Reddit, X (Twitter), YouTube and arbitrary web links
+            It collects your saved posts from Instagram, LinkedIn, X (Twitter), YouTube and arbitrary web links
             into one local, searchable library. Every saved item is automatically analyzed by an LLM (Claude), which
             categorizes it, tags it and writes a short summary — so months later you can actually <em>find</em> that post
             again instead of scrolling through five different apps.
@@ -197,7 +188,7 @@ export default function DocsPage() {
           <H2 id="features">Features</H2>
           <UL items={[
             <><strong>Paste any link</strong> — Open Graph / oEmbed metadata is fetched and the item is enriched automatically.</>,
-            <><strong>Chrome extension (MV3)</strong> — passively collects items from Instagram Saved, LinkedIn My Items, X Bookmarks, Reddit Saved, YouTube playlists. On every other website a floating <strong>SAVE</strong> tab appears; highlight text to save with a note; right-click for context menu.</>,
+            <><strong>Chrome extension (MV3)</strong> — passively collects items from Instagram Saved, LinkedIn My Items, X Bookmarks, and YouTube Watch Later. On every other website a floating <strong>SAVE</strong> tab appears; highlight text to save with a note; right-click for context menu.</>,
             <><strong>AI analysis queue</strong> — DB-backed job queue (Postgres <Code>FOR UPDATE SKIP LOCKED</Code>) analyzes each item with Claude via forced tool-use → guaranteed JSON output, with retries and backoff.</>,
             <><strong>Re-analyze</strong> — open any item and click <strong>Re-analyze</strong> for a fresh analysis. <strong>+ Image</strong> variant also available (Claude Vision), consuming more tokens for richer results. Token usage tracked per item.</>,
             <><strong>Hybrid search</strong> — full-text (<Code>tsvector</Code>) + semantic vector search (multilingual-e5-small, local CPU inference). Results merged with Reciprocal Rank Fusion. Cross-language: Turkish query finds English content.</>,
@@ -214,7 +205,7 @@ export default function DocsPage() {
             <><strong>Dead link detection</strong> — background job checks every URL every 30 days; 404/410 responses get a "link broken" badge.</>,
             <><strong>Export all items</strong> — one-click JSON or CSV export of your entire library (toolbar buttons).</>,
             <><strong>PWA + Web Share Target</strong> — installable as a mobile app; share links from any app on your phone.</>,
-            <><strong>Multi-user</strong> — email/password auth (better-auth); each user sees only their own items. Anthropic API keys and Reddit tokens encrypted at rest (AES-256-GCM).</>,
+            <><strong>Multi-user</strong> — email/password auth (better-auth); each user sees only their own items. Anthropic API keys encrypted at rest (AES-256-GCM).</>,
             <><strong>3-layer deduplication</strong> — normalized URL, platform+external ID, and extension-side session dedup.</>,
           ]} />
 
@@ -266,34 +257,65 @@ npm run dev                        # http://localhost:3000`}</Pre>
               [<Code>DATABASE_URL</Code>, "dev only", <>Postgres connection string. Docker Compose sets it automatically. Default: <Code>postgresql://savedpocket:savedpocket@localhost:5432/savedpocket</Code></>],
               [<Code>ANTHROPIC_MODEL</Code>, "⬜", <>Defaults to <Code>claude-haiku-4-5</Code>.</>],
               [<Code>BETTER_AUTH_URL</Code>, "⬜", <>Public URL of the app. Defaults to <Code>http://localhost:3000</Code>.</>],
-              [<Code>REDDIT_CLIENT_ID</Code>, "⬜", "Reddit OAuth app client ID. Enables the in-app Connect Reddit flow."],
-              [<Code>REDDIT_CLIENT_SECRET</Code>, "⬜", "Reddit OAuth app client secret."],
               [<Code>IMAGE_CACHE_DIR</Code>, "⬜", <>Where downloaded images are cached. Defaults to <Code>./data/images</Code>.</>],
+              [<Code>MODEL_CACHE_DIR</Code>, "⬜", <>Where HuggingFace embedding model files are cached. Defaults to <Code>./data/models</Code>. Docker Compose sets this automatically.</>],
             ]}
           />
 
           {/* ── CHROME EXTENSION ─────────────────────────────────────────── */}
           <H2 id="extension">Chrome Extension</H2>
-          <P>The extension collects items from pages you already have open — it never asks for platform passwords.</P>
-          <H3 id="ext-setup">Setup</H3>
+          <P>The extension collects items from pages you already have open — it never asks for platform passwords. It works with any SavedPocket instance, whether local or hosted remotely.</P>
+
+          <H3 id="ext-install">Installation</H3>
+          <P>The extension is distributed as a <Code>.zip</Code> file. No build step required — it is plain JavaScript (Chrome MV3).</P>
           <UL items={[
-            <>Open <Code>chrome://extensions</Code>, enable <strong>Developer mode</strong>, click <strong>Load unpacked</strong>, and select the <Code>extension/</Code> folder.</>,
-            <>Make sure you are logged in to SavedPocket (<Code>http://localhost:3000</Code>) in the same browser — the extension fetches your personal API key from your session automatically.</>,
-            <>Visit your saved pages and scroll — items appear in the dashboard automatically.</>,
+            <>Unzip the file to any permanent folder on your computer (do not delete it after install).</>,
+            <>Open <Code>chrome://extensions</Code> in Chrome.</>,
+            <>Enable <strong>Developer mode</strong> (toggle, top-right corner).</>,
+            <>Click <strong>Load unpacked</strong> and select the unzipped folder.</>,
+            <>Pin the SavedPocket icon to the Chrome toolbar for easy access.</>,
           ]} />
+          <Callout type="info">
+            <p>Developer mode must stay enabled for unpacked extensions to keep running. It has no effect on your browser's security or other extensions.</p>
+          </Callout>
+
+          <H3 id="ext-popup">Extension Popup</H3>
+          <P>Click the SavedPocket icon in Chrome's toolbar to open the popup. This is where you configure the connection to your SavedPocket instance.</P>
+          <Table
+            headers={["Field / Button", "Description"]}
+            rows={[
+              [<><strong>Local dev</strong> / <strong>Remote server</strong></>, "Preset buttons — quickly switch between localhost and a remote URL."],
+              ["Server URL", <>The URL of your SavedPocket instance. Defaults to <Code>http://localhost:3000</Code>. Change this if your server is hosted elsewhere.</>],
+              ["API Key", "Your personal API key. Paste it here if the extension cannot auto-detect your session (common for remote servers)."],
+              [<><strong>Save &amp; Test</strong></>, "Saves the config and immediately tests the connection — the status indicator updates to green (connected) or red (error)."],
+              [<><strong>Open Dashboard ↗</strong></>, "Opens your SavedPocket dashboard in a new tab."],
+              ["Status indicator", <>Green dot = connected and authenticated. Red dot = cannot reach the server or not logged in. Hover for the error message.</>],
+            ]}
+          />
+
+          <H3 id="ext-server-url">Server URL Configuration</H3>
+          <P>If SavedPocket is hosted at a custom domain (not localhost), tell the extension where to find it:</P>
+          <UL items={[
+            <>Click the SavedPocket icon in the toolbar → popup opens.</>,
+            <>Click <strong>Remote server</strong> or type your URL directly into the <strong>Server URL</strong> field (e.g. <Code>https://pocket.yourdomain.com</Code>).</>,
+            <>Click <strong>Save &amp; Test</strong> — the extension checks the connection and tries to fetch your API key automatically from your active session.</>,
+            <>If auto-detection fails (status stays red), copy your API key from the dashboard sidebar and paste it into the <strong>API Key</strong> field, then <strong>Save &amp; Test</strong> again.</>,
+          ]} />
+          <Callout type="tip">
+            <p>Make sure you are <strong>logged in</strong> to your SavedPocket instance in the same browser before clicking Save &amp; Test — the extension uses your session cookie to fetch the key automatically when possible.</p>
+          </Callout>
 
           <H3 id="ext-platforms">Platform Scrapers</H3>
+          <P>Visit the URL below while logged in — the extension detects the page and silently collects your saved items as you scroll.</P>
           <Table
             headers={["Platform", "URL to visit"]}
             rows={[
               ["Instagram", <Code>instagram.com/&lt;you&gt;/saved/</Code>],
               ["LinkedIn", <Code>linkedin.com/my-items/</Code>],
               ["X / Twitter", <Code>x.com/i/bookmarks</Code>],
-              ["Reddit", <Code>reddit.com/user/&lt;you&gt;/saved</Code>],
-              ["YouTube", <Code>youtube.com/playlist?list=WL</Code>],
+              ["YouTube Watch Later", <Code>youtube.com/playlist?list=WL</Code>],
             ]}
           />
-
           <H3 id="ext-save-methods">Save Any Page</H3>
           <Table
             headers={["Method", "How"]}
@@ -301,23 +323,23 @@ npm run dev                        # http://localhost:3000`}</Pre>
               ["Floating SAVE tab", "A bookmark tab is pinned to the right edge of every page. Click it to save the current URL."],
               ["Text selection bubble", "Highlight any text — a small bookmark icon appears. Click it to save the page with the highlighted text as a personal note."],
               ["Right-click context menu", <>Right-click anywhere → <strong>Save to SavedPocket</strong>. Right-click on selected text → <strong>Save selection to SavedPocket</strong> (selection becomes the note).</>],
-              ["Toolbar icon", "Click the SavedPocket icon in Chrome's toolbar to open the popup with server status and quick save."],
+              ["Toolbar popup", <>Click the SavedPocket toolbar icon → <strong>Open Dashboard ↗</strong>, or use <strong>Save &amp; Test</strong> to confirm the connection.</>],
             ]}
           />
           <P>
-            The tab shows live feedback: <strong>SAVED</strong> (new item), <strong>IN LIB</strong> (already in your library), or <strong>ERR</strong> if something went wrong.
+            The floating tab shows live feedback: <strong>SAVED</strong> (new item), <strong>IN LIB</strong> (already in your library), or <strong>ERR</strong> if something went wrong.
           </P>
 
           <H3 id="ext-api-key">API Key</H3>
           <P>
-            The sidebar shows your personal API key under the <strong>API key</strong> section. Click the key to copy it to the clipboard.
-            Paste it into the extension popup's "API key" field if automatic session detection does not work
-            (e.g. when SavedPocket is not on <Code>localhost</Code>).
+            Your personal API key is shown in the dashboard sidebar (bottom of the left panel). Click it to copy to clipboard.
+            On localhost the extension picks it up automatically from your session — no manual step needed.
+            On a remote server, paste the key into the <strong>API Key</strong> field in the popup.
           </P>
-          <Pre title="extension/background.js — how authentication works">{`// 1. Extension reads stored key from chrome.storage.local
-// 2. If no key, falls back to cookie-based /api/me (works on localhost)
-// 3. All ingest requests carry:  x-savedpocket-key: <key>
-// 4. On 401, stale key is cleared and step 2 retries once`}</Pre>
+          <Pre title="extension/background.js — authentication flow">{`// 1. Read stored key from chrome.storage.local
+// 2. If no stored key → GET /api/me with credentials (session cookie)
+// 3. All ingest requests send:  x-savedpocket-key: <key>
+// 4. On 401, clear stale key and retry step 2 once`}</Pre>
 
           {/* ── WHATSAPP IMPORT ─────────────────────────────────────────── */}
           <H2 id="whatsapp-import">WhatsApp Import</H2>
@@ -637,7 +659,7 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
           <UL items={[
             <>Jobs are claimed with <Code>SELECT ... FOR UPDATE SKIP LOCKED</Code> — safe for multiple workers.</>,
             <>Claude uses forced tool-use (structured output) to return category, tags, and summary as guaranteed JSON.</>,
-            <>Up to 3 retries with exponential backoff on failure.</>,
+            <>Up to 3 retries with linear backoff (30 s × attempt number) on failure.</>,
             <>Token usage (in / out) is recorded per item and visible in the item detail dialog.</>,
             <>The <strong>Re-analyze</strong> button in the item detail re-queues a fresh analysis. <strong>+ Image</strong> variant also sends the cached image to Claude Vision for richer results.</>,
           ]} />
@@ -673,7 +695,7 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
           <P>ingest → normalize URL &amp; detect platform → dedup check → store item + enqueue jobs → worker claims jobs (SKIP LOCKED, concurrency 2, 3 retries) → Claude returns structured JSON → category resolved, tags + summary stored → search vector (<Code>tsvector</Code>) and vector embedding (<Code>vector(384)</Code>) updated → link status checked periodically.</P>
 
           <H3 id="arch-encryption">Encryption</H3>
-          <P><Code>BETTER_AUTH_SECRET</Code> is SHA-256 hashed into a 32-byte AES-256-GCM key. All Anthropic API keys and Reddit OAuth refresh tokens are encrypted before writing to Postgres and decrypted on read. Existing plaintext values are migrated automatically on first boot.</P>
+          <P><Code>BETTER_AUTH_SECRET</Code> is SHA-256 hashed into a 32-byte AES-256-GCM key. All Anthropic API keys are encrypted before writing to Postgres and decrypted on read. Existing plaintext values are migrated automatically on first boot.</P>
 
           {/* ── PROJECT STRUCTURE ─────────────────────────────────────────── */}
           <H2 id="project-structure">Project Structure</H2>
@@ -688,7 +710,6 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
 │       ├── instagram.js
 │       ├── linkedin.js
 │       ├── x.js
-│       ├── reddit.js
 │       ├── youtube.js
 │       └── save-anywhere.js  # floating SAVE tab + text selection bubble
 ├── mcp/                      # MCP server (Claude Desktop / Cursor / Zed)
@@ -723,7 +744,9 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
         │   └── settings/ai/  # per-user Anthropic key management
         ├── docs/             # this page
         ├── marketplace/      # public collections browser
+        ├── webmcp/           # WebMCP Gateway — browser-accessible MCP endpoint
         └── share/
+            ├── page.tsx      # generic /share landing
             └── collections/[slug]/  # public collection view + fork`}</Pre>
 
           {/* ── API REFERENCE ─────────────────────────────────────────── */}
@@ -751,6 +774,7 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
               ["POST", <Code>/api/items/[id]/visit</Code>, "Increment visit count + update lastVisitedAt."],
               ["POST", <Code>/api/items/[id]/reanalyze</Code>, "Re-queue AI analysis. Body: <Code>{ withImage?: boolean }</Code>."],
               ["GET/POST/DELETE", <Code>/api/items/[id]/collections</Code>, "List / add to / remove from collections."],
+              ["GET", <Code>/api/items/lookup</Code>, <>Check if a URL is already in the library. Query param: <Code>?url=</Code>. Returns <Code>&#123; found, id?, title? &#125;</Code>. Used by the extension to show IN LIB / SAVE state. Requires <Code>x-savedpocket-key</Code>.</>],
             ]}
           />
 
@@ -778,11 +802,13 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
             rows={[
               ["GET", <Code>/api/me</Code>, "Current user profile + API key. Accepts session or x-savedpocket-key header."],
               ["GET", <Code>/api/categories</Code>, "List categories with item counts."],
-              ["POST", <Code>/api/chat</Code>, "RAG chat. Body: <Code>{ messages: [...] }</Code>. Streams Claude response."],
+              ["POST", <Code>/api/chat</Code>, <><Code>&#123; message: string, collectionId?: number &#125;</Code> — RAG chat. Embeds query, retrieves top-K nearest items, returns <Code>&#123; answer, items &#125;</Code>.</>],
               ["GET", <Code>/api/export</Code>, "Export full library. <Code>?format=json|csv</Code>."],
               ["GET", <Code>/api/digest</Code>, "Weekly stats + rediscover suggestions."],
-              ["GET/POST", <Code>/api/sync/reddit</Code>, "Trigger or check status of Reddit sync."],
+              ["GET", <Code>/api/sync/status</Code>, "Check background sync job status."],
               ["GET", <Code>/api/images/[itemId]</Code>, "Serve cached item image."],
+              ["GET", <Code>/api/settings/ai</Code>, "Current user's AI config — whether a user/server key is set, masked key, and effective model."],
+              ["PUT", <Code>/api/settings/ai</Code>, <>Save per-user Anthropic API key and/or model. Body: <Code>&#123; apiKey?, model? &#125;</Code>. Validates credentials before saving; re-queues previously failed analyses on success.</>],
             ]}
           />
 

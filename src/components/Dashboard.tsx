@@ -13,6 +13,7 @@ import {
   Tag,
   Upload,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -25,7 +26,6 @@ import {
   type SortValue,
 } from "@/lib/types";
 import { CategorySidebar } from "./CategorySidebar";
-import { ChatDialog } from "./ChatDialog";
 import { DigestCard } from "./DigestCard";
 import { ItemCard } from "./ItemCard";
 import { ItemDetailDialog } from "./ItemDetailDialog";
@@ -56,7 +56,6 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [aiConfigured, setAiConfigured] = useState(true);
 
@@ -221,6 +220,19 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
     return () => document.removeEventListener("keydown", handleKey);
   }, []);
 
+  useEffect(() => {
+    async function handleOpenItem(e: Event) {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
+      const res = await fetch(`/api/items/${id}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as ItemDto;
+      openItem(data);
+    }
+    window.addEventListener("savedpocket:open-item", handleOpenItem);
+    return () => window.removeEventListener("savedpocket:open-item", handleOpenItem);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function openItem(item: ItemDto) {
     const visited: ItemDto = {
       ...item,
@@ -309,7 +321,18 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
               )}
               <button
                 data-tour="chat-button"
-                onClick={() => setChatOpen(true)}
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("savedpocket:open-chat", {
+                      detail: {
+                        collectionId: collectionId ?? undefined,
+                        collectionName: collectionId
+                          ? collectionsData.find((c) => c.id === collectionId)?.name
+                          : undefined,
+                      },
+                    })
+                  );
+                }}
                 title="Chat with your library"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
               >
@@ -323,22 +346,22 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
               >
                 <Upload className="h-4 w-4" />
               </button>
-              <a
+              <Link
                 data-tour="marketplace"
                 href="/marketplace"
                 title="Collection Marketplace"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
               >
                 <BookOpen className="h-4 w-4" />
-              </a>
-              <a
+              </Link>
+              <Link
                 data-tour="docs"
                 href="/docs"
                 title="Documentation"
                 className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
               >
                 <FileText className="h-4 w-4" />
-              </a>
+              </Link>
               <button
                 data-tour="settings-button"
                 onClick={() => setSettingsOpen(true)}
@@ -536,21 +559,11 @@ export function Dashboard({ userEmail }: { userEmail: string }) {
         onImported={refreshAll}
       />
 
-      {chatOpen && (
-        <ChatDialog
-          onClose={() => setChatOpen(false)}
-          collectionId={collectionId ?? undefined}
-          collectionName={collectionId ? collectionsData.find((c) => c.id === collectionId)?.name : undefined}
-          onOpenItem={async (id) => {
-            const res = await fetch(`/api/items/${id}`);
-            if (!res.ok) return;
-            const data = await res.json();
-            openItem(data);
-          }}
-        />
-      )}
-
-      <OnboardingTour onOpenChat={() => setChatOpen(true)} />
+      <OnboardingTour
+        onOpenChat={() =>
+          window.dispatchEvent(new CustomEvent("savedpocket:open-chat", { detail: {} }))
+        }
+      />
       <WebMCPTools apiKey={extensionKey} />
 
       {selectedItem && (

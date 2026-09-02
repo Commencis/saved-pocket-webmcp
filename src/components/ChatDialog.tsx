@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Loader2, MessageSquare, Send, X } from "lucide-react";
+import { ExternalLink, Loader2, MessageSquare, Minus, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
@@ -12,11 +12,15 @@ interface Message {
 
 export function ChatDialog({
   onClose,
+  onMinimize,
+  minimized,
   onOpenItem,
   collectionId,
   collectionName,
 }: {
   onClose: () => void;
+  onMinimize?: () => void;
+  minimized?: boolean;
   onOpenItem?: (id: string) => void;
   collectionId?: number;
   collectionName?: string;
@@ -65,6 +69,8 @@ export function ChatDialog({
       setBusy(false);
     }
   }
+
+  if (minimized) return null;
 
   function requestClose() {
     if (messages.length > 0) setConfirmClose(true);
@@ -120,12 +126,23 @@ export function ChatDialog({
               </span>
             )}
           </div>
-          <button
-            onClick={requestClose}
-            className="ml-auto rounded-lg p-1 text-neutral-400 hover:bg-neutral-100"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="ml-auto flex items-center gap-1">
+            {onMinimize && (
+              <button
+                onClick={onMinimize}
+                title="Minimize"
+                className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              onClick={requestClose}
+              className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
