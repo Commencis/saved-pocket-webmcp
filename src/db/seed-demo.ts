@@ -387,7 +387,7 @@ export async function seedDemoUser(opts?: { reset?: boolean }): Promise<void> {
     let collectionId: number;
 
     const existingCol = await db.query.collections.findFirst({
-      where: eq(collections.slug, col.slug),
+      where: and(eq(collections.userId, userId), eq(collections.name, col.name)),
     });
 
     if (existingCol) {
