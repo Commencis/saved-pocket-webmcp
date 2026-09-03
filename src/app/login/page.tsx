@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
+const SIGNUP_ENABLED = false;
+
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -87,17 +89,19 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <button
-          onClick={() => {
-            setMode(mode === "signin" ? "signup" : "signin");
-            setError(null);
-          }}
-          className="mt-4 w-full text-center text-xs text-neutral-500 hover:text-neutral-800"
-        >
-          {mode === "signin"
-            ? "No account yet? Create one"
-            : "Already have an account? Sign in"}
-        </button>
+        {SIGNUP_ENABLED && (
+          <button
+            onClick={() => {
+              setMode(mode === "signin" ? "signup" : "signin");
+              setError(null);
+            }}
+            className="mt-4 w-full text-center text-xs text-neutral-500 hover:text-neutral-800"
+          >
+            {mode === "signin"
+              ? "No account yet? Create one"
+              : "Already have an account? Sign in"}
+          </button>
+        )}
       </div>
 
       <div className="flex gap-4 text-xs text-neutral-400 justify-center">

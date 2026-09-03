@@ -177,7 +177,7 @@ export function CategorySidebar({
             )}
           </button>
           {keyCopied && (
-            <p className="mt-1 text-[10px] text-green-600">Kopyalandı</p>
+            <p className="mt-1 text-[10px] text-green-600">Copied</p>
           )}
         </section>
       )}
