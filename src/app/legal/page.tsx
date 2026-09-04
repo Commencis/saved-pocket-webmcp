@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Legal — SavedPocket",
-  description: "Legal notice, usage terms, and MIT license for SavedPocket.",
+  description: "Legal notice, usage terms, and AGPL v3 license for SavedPocket.",
 };
 
 function H2({ id, children }: { id: string; children: React.ReactNode }) {
@@ -44,9 +44,10 @@ export default function LegalPage() {
 
         <h1 className="mb-1 text-3xl font-bold text-neutral-900">Legal Notice</h1>
         <p className="mb-8 text-sm text-neutral-500">
-          SavedPocket is open-source software distributed under the MIT License. This notice provides
-          additional usage guidelines that clarify user responsibilities when deploying or using this
-          software. These guidelines do not alter the MIT License.
+          SavedPocket is free software distributed under the GNU Affero General Public License v3.0
+          (AGPL-3.0). This notice provides additional usage guidelines that clarify user
+          responsibilities when deploying or using this software. These guidelines do not alter the
+          AGPL-3.0 License.
         </p>
 
         <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
@@ -58,8 +59,8 @@ export default function LegalPage() {
           <P>
             You are solely responsible for ensuring that your use of SavedPocket complies with the
             terms of service of any third-party platform (Instagram, LinkedIn, X/Twitter, YouTube,
-            etc.) from which content is collected. The software developers bear no responsibility for
-            any violations of third-party platform terms.
+            etc.) whose pages you save content from. The software developers bear no responsibility
+            for any violations of third-party platform terms.
           </P>
 
           <H3>2. Personal Data</H3>
@@ -71,7 +72,7 @@ export default function LegalPage() {
             be established with the relevant parties before integration.
           </P>
 
-          <H3>3. Data Masking & Enterprise Use</H3>
+          <H3>3. Data Masking &amp; Enterprise Use</H3>
           <P>
             When integrating SavedPocket with organizational systems, sensitive or personally
             identifiable information (PII) must be masked or anonymized on the client side before
@@ -83,10 +84,11 @@ export default function LegalPage() {
           <P>The following uses are explicitly prohibited:</P>
           <UL
             items={[
-              "Bulk scraping or mass data collection for commercial resale or redistribution",
+              "Mass data collection for commercial resale or redistribution",
               "Processing data belonging to third parties without their informed consent",
               "Using SavedPocket to circumvent platform access controls or authentication systems",
               "Transferring collected data to unauthorized third parties",
+              "Distributing a modified version of SavedPocket as a proprietary (closed-source) product without complying with AGPL-3.0 obligations",
             ]}
           />
 
@@ -101,9 +103,9 @@ export default function LegalPage() {
           <H2 id="future-compatibility">Future Compatibility</H2>
           <P>
             As the WebMCP standard (W3C Community Group draft) matures and is adopted by platforms,
-            SavedPocket intends to transition from browser-extension-based scraping to
-            platform-native data access APIs, operating within formally agreed data-sharing
-            frameworks. This transition will further align the software with platform policies.
+            SavedPocket will be able to access data through platforms&apos; own agreed APIs — operating
+            within formally agreed data-sharing frameworks and further aligning the software with
+            platform policies.
           </P>
 
           <H2 id="contact">Contact</H2>
@@ -114,29 +116,36 @@ export default function LegalPage() {
 
           <div className="my-6 border-t border-neutral-100" />
 
-          <H2 id="license">MIT License</H2>
-          <div className="rounded-xl bg-neutral-50 p-4 font-mono text-xs leading-relaxed text-neutral-600 whitespace-pre-wrap">
-{`MIT License
+          <H2 id="license">License — GNU AGPL v3.0</H2>
+          <P>
+            SavedPocket is distributed under the{" "}
+            <strong>GNU Affero General Public License v3.0 (AGPL-3.0)</strong>.
+            The full license text is available in the{" "}
+            <a
+              href="https://github.com/Commencis/saved-pocket-webmcp/blob/main/LICENSE"
+              className="underline text-neutral-600 hover:text-neutral-900"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              LICENSE file in the repository
+            </a>.
+          </P>
 
-Copyright (c) 2026 Commencis
+          <H3>What AGPL-3.0 means for you</H3>
+          <UL items={[
+            <><strong>Free to use:</strong> You can run, study, and modify SavedPocket for any purpose, including commercially.</>,
+            <><strong>Copyleft:</strong> If you distribute a modified version — or run a modified version as a network service (SaaS) — you must release your modifications under AGPL-3.0 as well.</>,
+            <><strong>Source must remain open:</strong> You cannot incorporate SavedPocket into a proprietary (closed-source) product without complying with the license obligations.</>,
+            <><strong>No warranty:</strong> SavedPocket is provided &quot;as is&quot; without any warranty of any kind. The authors are not liable for damages arising from its use.</>,
+          ]} />
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.`}
+          <div className="rounded-xl bg-neutral-50 p-4 text-xs leading-relaxed text-neutral-500">
+            Copyright © 2026 Commencis. This program is free software: you can redistribute it
+            and/or modify it under the terms of the GNU Affero General Public License as published
+            by the Free Software Foundation, either version 3 of the License, or (at your option)
+            any later version. This program is distributed in the hope that it will be useful, but
+            WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+            FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
           </div>
         </div>
 
