@@ -43,83 +43,134 @@ export default function LegalPage() {
         </div>
 
         <h1 className="mb-1 text-3xl font-bold text-neutral-900">Legal Notice</h1>
-        <p className="mb-8 text-sm text-neutral-500">
-          SavedPocket is free software distributed under the GNU Affero General Public License v3.0
-          (AGPL-3.0). This notice provides additional usage guidelines that clarify user
-          responsibilities when deploying or using this software. These guidelines do not alter the
-          AGPL-3.0 License.
-        </p>
+        <p className="mb-2 text-xs font-medium text-neutral-400 uppercase tracking-wide">&ldquo;Notice&rdquo;</p>
 
         <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
 
-          <H2 id="user-responsibility">User Responsibility</H2>
-          <P>By installing and using SavedPocket, you agree to the following:</P>
-
-          <H3>1. Platform Terms of Service Compliance</H3>
           <P>
-            You are solely responsible for ensuring that your use of SavedPocket complies with the
-            terms of service of any third-party platform (Instagram, LinkedIn, X/Twitter, YouTube,
-            etc.) whose pages you save content from. The software developers bear no responsibility
-            for any violations of third-party platform terms.
+            SavedPocket is open-source software distributed under GNU Affero General Public
+            License, Version 3 (AGPL-3.0) (&ldquo;SavedPocket&rdquo;).
+          </P>
+          <P>
+            This Notice sets forth additional requirements and guidelines and clarifies
+            responsibilities applicable to any individual or entity that downloads, accesses,
+            installs, deploys or operates SavedPocket or its source code, whether directly or
+            indirectly (&ldquo;User(s)&rdquo;) in connection with their use and operation of
+            SavedPocket.
           </P>
 
-          <H3>2. Personal Data</H3>
+          <div className="my-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
+            SavedPocket was developed specifically for the purposes of and for use in the WebMCP
+            Challenge managed by Devpost (&ldquo;Hackathon&rdquo;) and is not intended for use
+            outside the Hackathon. It has not been designed, tested or validated for use outside
+            the context of the Hackathon. Any installation, deployment, operation or other use of
+            SavedPocket outside such context is undertaken at the relevant User&apos;s sole
+            discretion and risk, and SavedPocket developers, authors and contributors make no
+            representation or warranty as to its suitability, reliability, security or fitness for
+            such use, in addition to the disclaimers set out in the GNU Affero General Public
+            License, Version 3.
+          </div>
+
           <P>
-            SavedPocket processes content from accounts that the user has authenticated and has
-            legitimate access to. You must not use SavedPocket to collect or process personal data
-            belonging to other individuals without their explicit consent. For enterprise or
-            multi-user deployments involving employee data, a written data processing agreement must
-            be established with the relevant parties before integration.
+            By downloading, accessing, installing, deploying or operating SavedPocket or its
+            source code, Users acknowledge that they have read and understood this Notice and agree
+            to comply with the requirements and conditions set forth herein.
           </P>
 
-          <H3>3. Data Masking &amp; Enterprise Use</H3>
+          <H2 id="compliance">1. Compliance</H2>
           <P>
-            When integrating SavedPocket with organizational systems, sensitive or personally
-            identifiable information (PII) must be masked or anonymized on the client side before
-            being transmitted to SavedPocket. The operator is responsible for ensuring that no
-            unauthorized personal data enters the system.
+            SavedPocket relies on and interacts with certain third-party products, platforms and
+            services (e.g., Instagram, LinkedIn, X/Twitter, YouTube). Accordingly, the use or
+            operation of SavedPocket may be subject to the applicable third party&apos;s terms and
+            conditions, policies, restrictions and/or authorization requirements. Users shall be
+            responsible for obtaining any rights, licenses, permissions, consents, or authorizations
+            required for such use or operation and for ensuring that their use or operation of
+            SavedPocket complies with all applicable third-party terms and requirements.
+          </P>
+          <P>
+            Users shall be responsible for taking the necessary actions &ndash; such as entering
+            into an agreement with the relevant platform or using official and approved APIs &ndash;
+            to ensure that the Data (as described below) transfer from the third-party products,
+            platforms and services is legally compliant.
+          </P>
+          <P>
+            Users shall also be responsible for ensuring that their use or operation of SavedPocket
+            complies with applicable laws.
           </P>
 
-          <H3>4. Prohibited Uses</H3>
+          <H2 id="personal-data">2. Personal Data</H2>
+          <P>
+            Any data, information or content obtained from or made available through third-party
+            products, platforms and services as well as any data, information or content generated,
+            created, derived, processed or otherwise made available through or in connection with
+            the use or operation of SavedPocket (&ldquo;Data&rdquo;) may contain personal data.
+          </P>
+          <P>
+            Users shall be responsible for taking all actions and implementing and maintaining all
+            measures, safeguards and infrastructure necessary to ensure that the use or operation of
+            SavedPocket complies with all applicable data protection and privacy laws and
+            regulations.
+          </P>
+
+          <H2 id="intellectual-property">3. Intellectual Property Rights</H2>
+          <P>
+            Data may be protected by copyright, database rights or other intellectual property or
+            proprietary rights of third parties.
+          </P>
+          <P>
+            Users shall be responsible for ensuring that they have all necessary rights, licenses,
+            permissions and authorizations to access, use, reproduce, process, modify, display,
+            distribute or otherwise exploit such Data in connection with their use or operation of
+            SavedPocket and that such use or operation does not infringe or otherwise violate any
+            third-party intellectual property or proprietary rights.
+          </P>
+          <P>
+            Nothing in this Notice or the availability or distribution of SavedPocket shall be
+            construed as granting any right, license, permission or authorization with respect to
+            any Data or any third-party product, platform or service.
+          </P>
+
+          <H2 id="prohibited-uses">4. Prohibited Uses</H2>
           <P>The following uses are explicitly prohibited:</P>
-          <UL
-            items={[
-              "Mass data collection for commercial resale or redistribution",
-              "Processing data belonging to third parties without their informed consent",
-              "Using SavedPocket to circumvent platform access controls or authentication systems",
-              "Transferring collected data to unauthorized third parties",
-              "Distributing a modified version of SavedPocket as a proprietary (closed-source) product without complying with AGPL-3.0 obligations",
-            ]}
-          />
+          <UL items={[
+            "Bulk scraping or mass data collection, including for commercial resale or redistribution;",
+            "Using SavedPocket to circumvent platform access controls, authentication systems, or other technical restrictions;",
+            "Using SavedPocket to access or use Data that the relevant User is not authorized to access or use;",
+            "Transferring Data to unauthorized third parties.",
+          ]} />
 
-          <H3>5. Legal Liability</H3>
+          <H2 id="liability">5. Liability</H2>
           <P>
-            Any violation of third-party platform terms, applicable data protection laws (GDPR,
-            KVKK, CCPA, etc.), or the restrictions set forth in this notice is the sole legal
-            responsibility of the user or operator. The software authors and contributors are not
-            liable for any legal consequences arising from such violations.
+            Any violation of the requirements set forth in this Notice or otherwise applicable to
+            the use or operation of SavedPocket shall be the sole responsibility of the relevant
+            User. SavedPocket developers, authors and contributors shall not be responsible or
+            liable for any use or operation of SavedPocket in violation of such requirements or for
+            any claims, losses, damages, liabilities or other consequences arising out of or in
+            connection with such use or operation.
           </P>
-
-          <H2 id="future-compatibility">Future Compatibility</H2>
           <P>
-            As the WebMCP standard (W3C Community Group draft) matures and is adopted by platforms,
-            SavedPocket will be able to access data through platforms&apos; own agreed APIs — operating
-            within formally agreed data-sharing frameworks and further aligning the software with
-            platform policies.
+            SavedPocket is provided &ldquo;as is&rdquo;, without warranty of any kind, express or
+            implied, including but not limited to the warranties of merchantability, fitness for a
+            particular purpose and non-infringement. In no event shall SavedPocket developers,
+            authors and contributors be liable for any claim, damages or other liability, whether
+            in an action of contract, tort or otherwise, arising out of or in connection with the
+            use or operation of SavedPocket.
           </P>
-
-          <H2 id="contact">Contact</H2>
           <P>
-            For questions about enterprise data agreements or compliance, please open an issue in the
-            project repository.
+            SavedPocket relies on and interacts with certain third-party products, platforms and
+            services that are outside the control of SavedPocket developers, authors and
+            contributors. No representation or warranty is made regarding the availability,
+            continuity, compatibility, accuracy or functionality of any such third-party product,
+            platform or service, and SavedPocket developers, authors and contributors shall not be
+            responsible or liable for any modification, restriction, suspension, discontinuation or
+            unavailability thereof or for any resulting impact on the operation or functionality of
+            SavedPocket.
           </P>
 
           <div className="my-6 border-t border-neutral-100" />
 
-          <H2 id="license">License — GNU AGPL v3.0</H2>
+          <H3>License</H3>
           <P>
-            SavedPocket is distributed under the{" "}
-            <strong>GNU Affero General Public License v3.0 (AGPL-3.0)</strong>.
             The full license text is available in the{" "}
             <a
               href="https://github.com/Commencis/saved-pocket-webmcp/blob/main/LICENSE"
@@ -127,25 +178,18 @@ export default function LegalPage() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              LICENSE file in the repository
+              LICENSE file in the project repository
             </a>.
           </P>
 
-          <H3>What AGPL-3.0 means for you</H3>
-          <UL items={[
-            <><strong>Free to use:</strong> You can run, study, and modify SavedPocket for any purpose, including commercially.</>,
-            <><strong>Copyleft:</strong> If you distribute a modified version — or run a modified version as a network service (SaaS) — you must release your modifications under AGPL-3.0 as well.</>,
-            <><strong>Source must remain open:</strong> You cannot incorporate SavedPocket into a proprietary (closed-source) product without complying with the license obligations.</>,
-            <><strong>No warranty:</strong> SavedPocket is provided &quot;as is&quot; without any warranty of any kind. The authors are not liable for damages arising from its use.</>,
-          ]} />
-
           <div className="rounded-xl bg-neutral-50 p-4 text-xs leading-relaxed text-neutral-500">
-            Copyright © 2026 Commencis. This program is free software: you can redistribute it
-            and/or modify it under the terms of the GNU Affero General Public License as published
-            by the Free Software Foundation, either version 3 of the License, or (at your option)
-            any later version. This program is distributed in the hope that it will be useful, but
-            WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-            FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+            Copyright &copy; 2026 Commencis. This program is free software: you can redistribute
+            it and/or modify it under the terms of the GNU Affero General Public License as
+            published by the Free Software Foundation, either version 3 of the License, or (at
+            your option) any later version. This program is distributed in the hope that it will
+            be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+            MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public
+            License for more details.
           </div>
         </div>
 
