@@ -164,13 +164,34 @@
   });
 
   /* ─── Save ─── */
-  function doSave(url, title, note) {
+  function readOgMeta() {
+    function getMeta(prop) {
+      return (
+        document.querySelector('meta[property="' + prop + '"]')?.content ||
+        document.querySelector('meta[name="' + prop + '"]')?.content ||
+        null
+      );
+    }
+    return {
+      title: getMeta('og:title') || getMeta('twitter:title') || document.title || null,
+      description: getMeta('og:description') || getMeta('twitter:description') || null,
+      imageUrl: getMeta('og:image') || getMeta('twitter:image') || null,
+      url: getMeta('og:url') || location.href,
+    };
+  }
+
+  function doSave(rawUrl, rawTitle, note) {
     setTabState(tab, 'loading');
+    const og = readOgMeta();
+    const url = og.url || rawUrl;
+    const title = og.title || rawTitle;
+    const description = og.description || null;
+    const imageUrl = og.imageUrl || null;
 
     function performSave(mcpContent) {
       try {
         chrome.runtime.sendMessage(
-          { type: 'SAVEDPOCKET_SAVE_URL', url, title: title || null, note: note || null, mcpContent: mcpContent || null },
+          { type: 'SAVEDPOCKET_SAVE_URL', url, title: title || null, note: note || null, mcpContent: mcpContent || null, description, imageUrl },
           function (resp) {
             if (chrome.runtime.lastError) { setTabState(tab, 'error'); return; }
             if (resp && resp.ok && resp.itemId) {

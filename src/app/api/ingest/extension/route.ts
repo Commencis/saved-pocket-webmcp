@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         imageUrl: entry.imageUrl ?? undefined,
         notes: entry.notes ?? undefined,
         savedAt: new Date(),
-        fetchMeta: !hasMcp,
+        fetchMeta: !hasMcp && !entry.description,
       });
       if (result.created) created++;
       resultItems.push({ id: result.item.id, title: result.item.title });

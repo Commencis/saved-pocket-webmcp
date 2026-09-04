@@ -126,6 +126,7 @@ const toc = [
   { id: "ext-install", label: "↳ Installation" },
   { id: "ext-popup", label: "↳ Extension Popup" },
   { id: "ext-server-url", label: "↳ Server URL" },
+  { id: "ext-save-methods", label: "↳ Save Any Page" },
   { id: "whatsapp-import", label: "WhatsApp Import" },
   { id: "collections", label: "Collections" },
   { id: "export", label: "Export for LLM / NotebookLM" },
@@ -170,8 +171,8 @@ export default function DocsPage() {
           <H2 id="overview">Overview</H2>
           <P>
             <strong>SavedPocket</strong> is a self-hosted "read-it-later brain" for everything you save across the internet.
-            It collects your saved posts from Instagram, LinkedIn, X (Twitter), YouTube and arbitrary web links
-            into one local, searchable library. Every saved item is automatically analyzed by an LLM (Claude), which
+            Save any web page in one click — the Chrome extension reads the page's metadata (title, description, image) directly
+            from your browser and sends it to your personal library. Every saved item is automatically analyzed by an LLM, which
             categorizes it, tags it and writes a short summary — so months later you can actually <em>find</em> that post
             again instead of scrolling through five different apps.
           </P>
@@ -192,8 +193,8 @@ export default function DocsPage() {
           {/* ── FEATURES ─────────────────────────────────────────── */}
           <H2 id="features">Features</H2>
           <UL items={[
-            <><strong>Paste any link</strong> — Open Graph / oEmbed metadata is fetched and the item is enriched automatically.</>,
-            <><strong>Chrome extension (MV3)</strong> — passively collects items from Instagram Saved, LinkedIn My Items, X Bookmarks, and YouTube Watch Later. On every other website a floating <strong>SAVE</strong> tab appears; highlight text to save with a note; right-click for context menu.</>,
+            <><strong>Paste any link</strong> — paste a URL in the dashboard and the item is saved and analyzed automatically.</>,
+            <><strong>Chrome extension (MV3)</strong> — a floating <strong>SAVE</strong> tab appears on every website. Click to save the current page; the extension reads the page's Open Graph metadata (title, description, image) directly from your browser — no extra server request. Highlight text to save with a note; right-click for context menu.</>,
             <><strong>AI analysis queue</strong> — DB-backed job queue (Postgres <Code>FOR UPDATE SKIP LOCKED</Code>) analyzes each item with Claude via forced tool-use → guaranteed JSON output, with retries and backoff.</>,
             <><strong>Re-analyze</strong> — open any item and click <strong>Re-analyze</strong> for a fresh analysis. <strong>+ Image</strong> variant also available (Claude Vision), consuming more tokens for richer results. Token usage tracked per item.</>,
             <><strong>Hybrid search</strong> — full-text (<Code>tsvector</Code>) + semantic vector search (multilingual-e5-small, local CPU inference). Results merged with Reciprocal Rank Fusion. Cross-language: Turkish query finds English content.</>,
@@ -324,7 +325,7 @@ ANTHROPIC_MODEL=claude-haiku-4-5-20251001   # optional`}</Pre>
 
           {/* ── CHROME EXTENSION ─────────────────────────────────────────── */}
           <H2 id="extension">Chrome Extension</H2>
-          <P>The extension collects items from pages you already have open — it never asks for platform passwords. It works with any SavedPocket instance, whether local or hosted remotely.</P>
+          <P>The extension saves items from pages you already have open — it reads Open Graph metadata directly from the loaded page without making any additional network requests. It never asks for platform passwords and works with any SavedPocket instance, whether local or hosted remotely.</P>
 
           <H3 id="ext-install">Installation</H3>
           <P>The extension is distributed as a <Code>.zip</Code> file. No build step required — it is plain JavaScript (Chrome MV3).</P>
@@ -365,17 +366,6 @@ ANTHROPIC_MODEL=claude-haiku-4-5-20251001   # optional`}</Pre>
             <p>Make sure you are <strong>logged in</strong> to your SavedPocket instance in the same browser before clicking Save &amp; Test — the extension uses your session cookie to fetch the key automatically when possible.</p>
           </Callout>
 
-          <H3 id="ext-platforms">Platform Scrapers</H3>
-          <P>Visit the URL below while logged in — the extension detects the page and silently collects your saved items as you scroll.</P>
-          <Table
-            headers={["Platform", "URL to visit"]}
-            rows={[
-              ["Instagram", <Code>instagram.com/&lt;you&gt;/saved/</Code>],
-              ["LinkedIn", <Code>linkedin.com/my-items/</Code>],
-              ["X / Twitter", <Code>x.com/i/bookmarks</Code>],
-              ["YouTube Watch Later", <Code>youtube.com/playlist?list=WL</Code>],
-            ]}
-          />
           <H3 id="ext-save-methods">Save Any Page</H3>
           <Table
             headers={["Method", "How"]}
@@ -396,10 +386,10 @@ ANTHROPIC_MODEL=claude-haiku-4-5-20251001   # optional`}</Pre>
             On localhost the extension picks it up automatically from your session — no manual step needed.
             On a remote server, paste the key into the <strong>API Key</strong> field in the popup.
           </P>
-          <Pre title="extension/background.js — authentication flow">{`// 1. Read stored key from chrome.storage.local
-// 2. If no stored key → GET /api/me with credentials (session cookie)
+          <Pre title="extension/background.js — authentication flow">{`// 1. GET /api/me with session cookie → use that user's key (fresh, correct account)
+// 2. Result cached 30 s to avoid a request on every save
 // 3. All ingest requests send:  x-savedpocket-key: <key>
-// 4. On 401, clear stale key and retry step 2 once`}</Pre>
+// 4. On 401, clear cache + stored key and retry once`}</Pre>
 
           {/* ── WHATSAPP IMPORT ─────────────────────────────────────────── */}
           <H2 id="whatsapp-import">WhatsApp Import</H2>
@@ -569,10 +559,10 @@ The following YouTube URLs can be added as individual YouTube sources in Noteboo
           {/* ── MCP SERVER ─────────────────────────────────────────── */}
           <H2 id="mcp">MCP Server</H2>
           <P>
-            The MCP server lets Claude Desktop, Cursor, Zed, or any MCP-compatible client browse and search your SavedPocket collections directly as AI tools — no copy-paste required.
+            The MCP server lets ChatGPT Desktop, Claude Desktop, Cursor, Zed, or any MCP-compatible client browse and search your SavedPocket collections directly as AI tools — no copy-paste required.
           </P>
           <Callout type="info">
-            <p>MCP is for <strong>Claude Desktop / Cursor / Zed</strong>, not for NotebookLM (which is a separate Google product). For NotebookLM, use the export options above.</p>
+            <p>MCP is for <strong>ChatGPT Desktop / Claude Desktop / Cursor / Zed</strong>, not for NotebookLM (which is a separate Google product). For NotebookLM, use the export options above.</p>
           </Callout>
 
           <H3 id="mcp-setup">Setup</H3>
@@ -648,8 +638,8 @@ Claude: [calls list_collections → get_collection_items(3)]
           <Callout type="info">
             <p><strong>How it differs from the MCP Server:</strong> The server-side MCP requires Claude Desktop / Cursor installation and an API key. WebMCP works entirely in the browser — any WebMCP-aware agent (ChatGPT browser mode) that visits your dashboard gains immediate access to your library through the tools below. For external agents that browse in their own isolated context, use the <a href="/webmcp" className="text-blue-600 underline">WebMCP Gateway</a> with an API key.</p>
           </Callout>
-          <Callout type="warn">
-            <p><strong>Platform transition note:</strong> Current platform integrations (Instagram, LinkedIn, X, YouTube) rely on the Chrome extension accessing pages you already have open — no platform passwords are stored or transmitted. As the <a href="https://webmachinelearning.github.io/webmcp/" className="text-blue-600 underline">WebMCP standard</a> (W3C draft) matures and platforms adopt it, SavedPocket will migrate to accessing data through platforms' own agreed APIs under their Terms of Service, replacing extension-based collection with a consent-based data model.</p>
+          <Callout type="info">
+            <p>As the <a href="https://webmachinelearning.github.io/webmcp/" className="text-blue-600 underline">WebMCP standard</a> (W3C draft) matures and platforms adopt it, SavedPocket will be able to access data through platforms' own agreed APIs — replacing manual save actions with a fully consent-based data model.</p>
           </Callout>
 
           <H3 id="webmcp-tools">Registered Tools</H3>
@@ -768,13 +758,9 @@ await document.modelContext.executeTool('list_collections', {})`}</Pre>
 ├── drizzle/                  # SQL migrations (applied automatically on startup)
 ├── extension/                # Chrome MV3 extension (no build step)
 │   ├── background.js         # zero-config: fetches API key from session automatically
-│   ├── shared.js             # dedup + send helpers shared by scrapers
-│   └── content/              # per-platform DOM scrapers
-│       ├── instagram.js
-│       ├── linkedin.js
-│       ├── x.js
-│       ├── youtube.js
-│       └── save-anywhere.js  # floating SAVE tab + text selection bubble
+│   ├── shared.js             # dedup + send helpers
+│   └── content/
+│       └── save-anywhere.js  # floating SAVE tab + text selection bubble (reads OG metadata)
 ├── mcp/                      # MCP server (Claude Desktop / Cursor / Zed)
 │   ├── server.ts             # 4 tools: list_collections, get_collection_items,
 │   │                         #          search_items, export_collection

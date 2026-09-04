@@ -73,20 +73,24 @@ async function send(platform, items, { retried = false } = {}) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-async function sendUrl(url, { title = null, note = null, mcpContent = null, retried = false } = {}) {
+async function sendUrl(url, { title = null, note = null, mcpContent = null, description = null, imageUrl = null, retried = false } = {}) {
   const { serverUrl } = await getConfig();
   const apiKey = await resolveApiKey(serverUrl);
+
+  const item = { url, title, notes: note, mcpContent };
+  if (description) item.description = description;
+  if (imageUrl) item.imageUrl = imageUrl;
 
   const res = await fetch(`${serverUrl}/api/ingest/extension`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-savedpocket-key": apiKey },
-    body: JSON.stringify({ items: [{ url, title, notes: note, mcpContent }] }),
+    body: JSON.stringify({ items: [item] }),
   });
 
   if (res.status === 401 && !retried) {
     _sessionKey = null; _sessionTs = 0;
     await chrome.storage.local.remove("apiKey");
-    return sendUrl(url, { title, note, mcpContent, retried: true });
+    return sendUrl(url, { title, note, mcpContent, description, imageUrl, retried: true });
   }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json(); // { created, received }
@@ -122,7 +126,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // save-anywhere.js: save a single page URL
   if (message?.type === "SAVEDPOCKET_SAVE_URL") {
-    sendUrl(message.url, { title: message.title, note: message.note, mcpContent: message.mcpContent ?? null })
+    sendUrl(message.url, { title: message.title, note: message.note, mcpContent: message.mcpContent ?? null, description: message.description ?? null, imageUrl: message.imageUrl ?? null })
       .then((data) => sendResponse({
         ok: true,
         created: data?.created > 0,
