@@ -194,6 +194,55 @@ savedpocket/
 └── data/models/              # embedding model cache (~120MB, downloaded once)
 ```
 
-## License / disclaimer
+## Legal Notice
 
-Personal-use tool. The browser extension only reads pages you open in your own authenticated sessions; respect each platform's terms of service when using it.
+SavedPocket is open-source software distributed under GNU Affero General Public License, Version 3 (AGPL-3.0).
+
+This Notice sets forth additional requirements and guidelines and clarifies responsibilities applicable to any individual or entity that downloads, accesses, installs, deploys or operates SavedPocket or its source code, whether directly or indirectly ("User(s)") in connection with their use and operation of SavedPocket.
+
+> **⚠️ Hackathon project:** SavedPocket was developed specifically for the purposes of and for use in the WebMCP Challenge managed by Devpost ("Hackathon") and is not intended for use outside the Hackathon. It has not been designed, tested or validated for use outside the context of the Hackathon. Any installation, deployment, operation or other use of SavedPocket outside such context is undertaken at the relevant User's sole discretion and risk, and SavedPocket developers, authors and contributors make no representation or warranty as to its suitability, reliability, security or fitness for such use, in addition to the disclaimers set out in the GNU Affero General Public License, Version 3.
+
+By downloading, accessing, installing, deploying or operating SavedPocket or its source code, Users acknowledge that they have read and understood this Notice and agree to comply with the requirements and conditions set forth herein.
+
+### 1. Compliance
+
+SavedPocket relies on and interacts with certain third-party products, platforms and services (e.g., Instagram, LinkedIn, X/Twitter, YouTube). Accordingly, the use or operation of SavedPocket may be subject to the applicable third party's terms and conditions, policies, restrictions and/or authorization requirements. Users shall be responsible for obtaining any rights, licenses, permissions, consents, or authorizations required for such use or operation and for ensuring that their use or operation of SavedPocket complies with all applicable third-party terms and requirements.
+
+Users shall be responsible for taking the necessary actions – such as entering into an agreement with the relevant platform or using official and approved APIs – to ensure that the Data (as described below) transfer from the third-party products, platforms and services is legally compliant.
+
+Users shall also be responsible for ensuring that their use or operation of SavedPocket complies with applicable laws.
+
+### 2. Personal Data
+
+Any data, information or content obtained from or made available through third-party products, platforms and services as well as any data, information or content generated, created, derived, processed or otherwise made available through or in connection with the use or operation of SavedPocket ("Data") may contain personal data.
+
+Users shall be responsible for taking all actions and implementing and maintaining all measures, safeguards and infrastructure necessary to ensure that the use or operation of SavedPocket complies with all applicable data protection and privacy laws and regulations.
+
+### 3. Intellectual Property Rights
+
+Data may be protected by copyright, database rights or other intellectual property or proprietary rights of third parties.
+
+Users shall be responsible for ensuring that they have all necessary rights, licenses, permissions and authorizations to access, use, reproduce, process, modify, display, distribute or otherwise exploit such Data in connection with their use or operation of SavedPocket and that such use or operation does not infringe or otherwise violate any third-party intellectual property or proprietary rights.
+
+Nothing in this Notice or the availability or distribution of SavedPocket shall be construed as granting any right, license, permission or authorization with respect to any Data or any third-party product, platform or service.
+
+### 4. Prohibited Uses
+
+The following uses are explicitly prohibited:
+
+- Bulk scraping or mass data collection, including for commercial resale or redistribution;
+- Using SavedPocket to circumvent platform access controls, authentication systems, or other technical restrictions;
+- Using SavedPocket to access or use Data that the relevant User is not authorized to access or use;
+- Transferring Data to unauthorized third parties.
+
+### 5. Liability
+
+Any violation of the requirements set forth in this Notice or otherwise applicable to the use or operation of SavedPocket shall be the sole responsibility of the relevant User. SavedPocket developers, authors and contributors shall not be responsible or liable for any use or operation of SavedPocket in violation of such requirements or for any claims, losses, damages, liabilities or other consequences arising out of or in connection with such use or operation.
+
+SavedPocket is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and non-infringement. In no event shall SavedPocket developers, authors and contributors be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising out of or in connection with the use or operation of SavedPocket.
+
+SavedPocket relies on and interacts with certain third-party products, platforms and services that are outside the control of SavedPocket developers, authors and contributors. No representation or warranty is made regarding the availability, continuity, compatibility, accuracy or functionality of any such third-party product, platform or service, and SavedPocket developers, authors and contributors shall not be responsible or liable for any modification, restriction, suspension, discontinuation or unavailability thereof or for any resulting impact on the operation or functionality of SavedPocket.
+
+---
+
+Copyright © 2026 Commencis. Licensed under the [GNU Affero General Public License v3.0](LICENSE).
